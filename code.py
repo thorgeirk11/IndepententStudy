@@ -79,137 +79,22 @@ y_true = tf.placeholder(tf.float32, shape=[None, num_classes], name='y_true')
 y_true_cls = tf.argmax(y_true, dimension=1)
 
 
-def new_weights(shape):
-    return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
-def new_biases(length):
-    return tf.Variable(tf.constant(0.05, shape=[length]))
+x_pretty = pt.wrap(x_image)
 
-
-
-def new_conv_layer(input,              # The previous layer.
-                   num_input_channels, # Num. channels in prev. layer.
-                   filter_size,        # Width and height of filters.
-                   num_filters,        # Number of filters.
-                   use_pooling=True):  # Use 2x2 max-pooling.
-
-    shape = [filter_size, filter_size, num_input_channels, num_filters]
-    weights = new_weights(shape=shape)
-    biases = new_biases(length=num_filters)
-
-    layer = tf.nn.conv2d(input=input,
-                         filter=weights,
-                         strides=[1, 1, 1, 1],
-                         padding='SAME')
-
-    layer += biases
-
-    if use_pooling:
-        layer = tf.nn.max_pool(value=layer,
-                               ksize=[1, 2, 2, 1],
-                               strides=[1, 2, 2, 1],
-                               padding='SAME')
-
-    layer = tf.nn.relu(layer)
-
-    return layer, weights
-
-def flatten_layer(layer):
-    # Get the shape of the input layer.
-    layer_shape = layer.get_shape()
-
-    # The shape of the input layer is assumed to be:
-    # layer_shape == [num_images, img_height, img_width, num_channels]
-
-    # The number of features is: img_height * img_width * num_channels
-    # We can use a function from TensorFlow to calculate this.
-    num_features = layer_shape[1:4].num_elements()
-
-    # Reshape the layer to [num_images, num_features].
-    # Note that we just set the size of the second dimension
-    # to num_features and the size of the first dimension to -1
-    # which means the size in that dimension is calculated
-    # so the total size of the tensor is unchanged from the reshaping.
-    layer_flat = tf.reshape(layer, [-1, num_features])
-
-    print("Layer")
-    print(layer)
-    print("Flat-Layer")
-    print(layer_flat)
-    # The shape of the flattened layer is now:
-    # [num_images, img_height * img_width * num_channels]
-
-    # Return both the flattened layer and the number of features.
-    return layer_flat, num_features
-
-
-
-def new_fc_layer(input,          # The previous layer.
-                 num_inputs,     # Num. inputs from prev. layer.
-                 num_outputs,    # Num. outputs.
-                 use_relu=True): # Use Rectified Linear Unit (ReLU)?
-
-    # Create new weights and biases.
-    weights = new_weights(shape=[num_inputs, num_outputs])
-    biases = new_biases(length=num_outputs)
-
-    # Calculate the layer as the matrix multiplication of
-    # the input and weights, and then add the bias-values.
-    layer = tf.matmul(input, weights) + biases
-
-    # Use ReLU?
-    if use_relu:
-        layer = tf.nn.relu(layer)
-
-    return layer
-
-# First convolutional layer.
-layer_conv1, weights_conv1 = \
-    new_conv_layer(input=x_image,
-                    num_input_channels=num_channels,
-                    filter_size=5,
-                    num_filters=16,
-                    use_pooling=True)
-
-# Second convolutional layer.
-layer_conv2, weights_conv2 = \
-    new_conv_layer(input=layer_conv1,
-                    num_input_channels=16,
-                    filter_size=5,
-                    num_filters=36,
-                    use_pooling=True)
-
-# Flatten layer.
-layer_flat, num_features = flatten_layer(layer_conv2)
-
-# First fully-connected layer.
-layer_fc1 = new_fc_layer(input=layer_flat,
-                            num_inputs=num_features,
-                            num_outputs=128,
-                            use_relu=True)
-
-# Second fully-connected layer.
-layer_fc2 = new_fc_layer(input=layer_fc1,
-                            num_inputs=128,
-                            num_outputs=num_classes,
-                            use_relu=False)
-
-# Predicted class-label.
-y_pred = tf.nn.softmax(layer_fc2)
-
-# Cross-entropy for the classification of each image.
-cross_entropy = \
-    tf.nn.softmax_cross_entropy_with_logits(logits=layer_fc2,
-                                            labels=y_true)
-
-# Loss aka. cost-measure.
-# This is the scalar value that must be minimized.
-loss = tf.reduce_mean(cross_entropy)
+with pt.defaults_scope(activation_fn=tf.nn.relu):
+    y_pred, loss = x_pretty.\
+        conv2d(kernel=5, depth=16, name='layer_conv1').\
+        max_pool(kernel=2, stride=2).\
+        conv2d(kernel=5, depth=36, name='layer_conv2').\
+        max_pool(kernel=2, stride=2).\
+        flatten().\
+        fully_connected(size=128, name='layer_fc1').\
+        softmax_classifier(num_classes=num_classes, labels=y_true)
 
 optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(loss)
 y_pred_cls = tf.argmax(y_pred, dimension=1)
 correct_prediction = tf.equal(y_pred_cls, y_true_cls)
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-
 
 session = tf.Session()
 session.run(tf.global_variables_initializer())
@@ -251,7 +136,8 @@ def optimize(num_iterations):
 
             # Message for printing.
             msg = "Optimization Iteration: {0:>6}, Training Accuracy: {1:>6.1%}"
-
+            print_test_accuracy()
+            
             # Print it.
             print(msg.format(i + 1, acc))
 
@@ -339,7 +225,4 @@ def print_test_accuracy(show_example_errors=False,
 
 print_test_accuracy()
 
-optimize(num_iterations=1)
-print_test_accuracy()
-optimize(num_iterations=99)
-print_test_accuracy()
+optimize(num_iterations=10000)

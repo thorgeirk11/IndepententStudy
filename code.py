@@ -119,11 +119,13 @@ def optimize(num_iterations):
         # y_true_batch are the true labels for those images.
         x_batch, y_true_batch = data.train.next_batch(train_batch_size)
 
+        print(x_batch)
+        print(y_true_batch)
         # Put the batch into a dict with the proper names
         # for placeholder variables in the TensorFlow graph.
         feed_dict_train = {x: x_batch,
                            y_true: y_true_batch}
-
+        print(feed_dict_train)
         # Run the optimizer using this batch of training data.
         # TensorFlow assigns the variables in feed_dict_train
         # to the placeholder variables and then runs the optimizer.

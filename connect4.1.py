@@ -37,30 +37,12 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 def read_from_csv():
     df = pd.read_csv('StatesAndActions.csv', usecols = range(0,state_size), header = None)
     l  = pd.read_csv('StatesAndActions.csv', usecols = range(state_size, state_size + num_actions), header = None)
-    features = tf.constant(df.values)
-    label = tf.constant(l.values)
+    features = df.values
+    label = l.values
     print(features)
     print(label)
     return features, label
 
-def input_fn(df):
-  # Creates a dictionary mapping from each continuous feature column name (k) to
-  # the values of that column stored in a constant Tensor.
-  continuous_cols = {k: tf.constant(df[k].values)
-                     for k in CONTINUOUS_COLUMNS}
-  # Creates a dictionary mapping from each categorical feature column name (k)
-  # to the values of that column stored in a tf.SparseTensor.
-  categorical_cols = {k: tf.SparseTensor(
-      indices=[[i, 0] for i in range(df[k].size)],
-      values=df[k].values,
-      dense_shape=[df[k].size, 1])
-                      for k in CATEGORICAL_COLUMNS}
-  # Merges the two dictionaries into one.
-  feature_cols = dict(continuous_cols.items() + categorical_cols.items())
-  # Converts the label column into a constant Tensor.
-  label = tf.constant(df[LABEL_COLUMN].values)
-  # Returns the feature columns and the label.
-  return feature_cols, label
 
 
 
@@ -104,7 +86,7 @@ def optimize(num_iterations):
                            y_true: y_true_batch}
 
         print(feed_dict_train)
-        
+
         # Run the optimizer using this batch of training data.
         # TensorFlow assigns the variables in feed_dict_train
         # to the placeholder variables and then runs the optimizer.

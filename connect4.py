@@ -17,7 +17,7 @@ import pandas as pd
 import random
 
 state_size = 135
-num_actions = 7
+num_actions = 8
 
 x = tf.placeholder(tf.float32, shape=[None, state_size], name='x')
 y_true = tf.placeholder(tf.float32, shape=[None, num_actions], name='y_true')
@@ -26,32 +26,32 @@ y_true_cls = tf.argmax(y_true, dimension=1)
 x_pretty = pt.wrap(x)
 with pt.defaults_scope(activation_fn=tf.nn.relu):
     y_pred, loss = x_pretty.\
-        fully_connected(size=state_size*2, name='layer_fc1').\
-        fully_connected(size=state_size, name='layer_fc2').\
-        fully_connected(size=50, name='layer_fc3').\
-        fully_connected(size=state_size, name='layer_fc4').\
-        fully_connected(size=num_actions, name='layer_fc5').\
+        fully_connected(size=256, name='layer_fc1').\
+        fully_connected(size=128, name='layer_fc1').\
+        fully_connected(size=256, name='layer_fc1').\
+        fully_connected(size=128, name='layer_fc1').\
         softmax_classifier(num_classes=num_actions, labels=y_true)
 
 optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(loss)
-
 y_pred_cls = tf.argmax(y_pred, dimension=1)
-
 correct_prediction = tf.equal(y_pred_cls, y_true_cls)
-
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-def read_data(file_name):
+def read_data(file_name, train_data_size):
     features = pd.read_csv(file_name, usecols = range(0,state_size), header = None)
     labels  = pd.read_csv(file_name, usecols = range(state_size, state_size + num_actions), header = None)
-    data = zip(features.values, labels.values)
+    data = list(zip(features.values, labels.values))
+    cut = int(len(data) * train_data_size)
+    train_data = data[:cut]
+    test_data =  data[cut:]
+    return train_data, test_data
+
+def process_probatility(data):
     data_dict = defaultdict(list)
     for v, k in data: data_dict[tuple(v)].append(k)
-
-def 
     weighted_data = []
     for key, labels in data_dict.items():
-        weighed_labels = [0, 0, 0, 0, 0, 0, 0]
+        weighed_labels = [0, 0, 0, 0, 0, 0, 0, 0]
         for label in labels:
             i = 0
             for v in label:
@@ -62,21 +62,22 @@ def
         count = len(labels)
         for i in range(0,len(weighed_labels)):
             weighed_labels[i] /= count
-        weighted_data.append( (list(key),weighed_labels) )
-
+        weighted_data.append( (list(key), weighed_labels) )
     return weighted_data
 
-train_data, test_data = read_data('Connect4_data_role1.csv.csv')
+def export_processed_data(data):
+    # save to file:
+    with open('Connect4_train_processed.json', 'w') as f:
+        for k, v in data:
+            line = '{}, {}'.format(k, v) 
+            print(line, file=f)     
 
-
-# save to file:
-with open('Connect4_train_processed.json', 'w') as f:
-    for k, v in train_data:
-        line = '{}, {}'.format(k, v) 
-        print(line, file=f)     
-
+# Splits the training and test data 80/20.
+train_data, raw_test_data = read_data('data/Connect4_data_role1.csv', 0.8)
+test_data = process_probatility(raw_test_data)
 print(len(train_data))
 print(len(test_data))
+
 def read_from_csv(batch_size):
     features = []
     labels = []
@@ -85,7 +86,6 @@ def read_from_csv(batch_size):
         features.append(feature)
         labels.append(label)
     return features, labels
-
 
 session = tf.Session()
 session.run(tf.global_variables_initializer())
@@ -101,6 +101,8 @@ def optimize(num_iterations):
     # Start-time used for printing time-usage below.
     start_time = time.time()
 
+    feed_dict_test = {x: [i[0] for i in test_data] ,
+                      y_true: [i[1] for i in test_data] }
     for i in range(total_iterations,
                    total_iterations + num_iterations):
 
@@ -123,21 +125,17 @@ def optimize(num_iterations):
         if i % 100 == 0:
             # Calculate the accuracy on the training-set.
             acc_train = session.run(accuracy, feed_dict=feed_dict_train)
+            acc = session.run(accuracy, feed_dict=feed_dict_test)
             
-            feed_dict = {x: [i[0] for i in test_data] ,
-                            y_true: [i[1] for i in test_data] }
-
-            acc = session.run(accuracy, feed_dict=feed_dict)
+            example = test_data[13]
             
-            example = test_data[15]
-            feed_dict_2 = {x: [example[0]],
-                            y_true: [example[1]] }
-            predictied = session.run(y_pred, feed_dict= feed_dict_2)
-            l = session.run(loss, feed_dict= feed_dict_2)
-            print(list(predictied[0]))
-            print(example[1])
-            print(l)
-
+            #feed_dict_2 = {x: [example[0]],
+            #                y_true: [example[1]] }
+            #predictied = session.run(y_pred, feed_dict= feed_dict_2)
+            #l = session.run(loss, feed_dict= feed_dict_2)
+            #print(list(predictied[0]))
+            #print(example[1])
+            #print(l)
 
             # Message for printing.
             msg = "Optimization Iteration: {0:>6}, Train Accuracy: {1:>6.1%}, Test Accuracy: {2:>6.1%}"
@@ -157,4 +155,4 @@ def optimize(num_iterations):
     # Print the time-usage.
     print("Time usage: " + str(timedelta(seconds=int(round(time_dif)))))
 
-optimize(3000)
+optimize(30000)

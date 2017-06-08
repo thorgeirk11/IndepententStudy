@@ -1,65 +1,4 @@
-drop table states_parsed;
-create table states_parsed(
-	game varchar(40),
-	match_id varchar(40),
-    step_number int(11),
-	CONTROLRED int,
-	CONTROLWHITE int,
-	CELL10DIRT int,
-	CELL11B int, CELL11R int, CELL11W int,
-	CELL12B int, CELL12R int, CELL12W int,
-	CELL13B int, CELL13R int, CELL13W int,
-	CELL14B int, CELL14R int, CELL14W int,
-	CELL15B int, CELL15R int, CELL15W int,
-	CELL16B int, CELL16R int, CELL16W int,
-	CELL20DIRT int,
-	CELL21B int, CELL21R int, CELL21W int,
-	CELL22B int, CELL22R int, CELL22W int,
-	CELL23B int, CELL23R int, CELL23W int,
-	CELL24B int, CELL24R int, CELL24W int,
-	CELL25B int, CELL25R int, CELL25W int,
-	CELL26B int, CELL26R int, CELL26W int,
-	CELL30DIRT int,
-	CELL31B int, CELL31R int, CELL31W int,
-	CELL32B int, CELL32R int, CELL32W int,
-	CELL33B int, CELL33R int, CELL33W int,
-	CELL34B int, CELL34R int, CELL34W int,
-	CELL35B int, CELL35R int, CELL35W int,
-	CELL36B int, CELL36R int, CELL36W int,
-	CELL40DIRT int,
-	CELL41B int, CELL41R int, CELL41W int,
-	CELL42B int, CELL42R int, CELL42W int,
-	CELL43B int, CELL43R int, CELL43W int,
-	CELL44B int, CELL44R int, CELL44W int,
-	CELL45B int, CELL45R int, CELL45W int,
-	CELL46B int, CELL46R int, CELL46W int,
-	CELL50DIRT int,
-	CELL51B int, CELL51R int, CELL51W int,
-	CELL52B int, CELL52R int, CELL52W int,
-	CELL53B int, CELL53R int, CELL53W int,
-	CELL54B int, CELL54R int, CELL54W int,
-	CELL55B int, CELL55R int, CELL55W int,
-	CELL56B int, CELL56R int, CELL56W int,
-	CELL60DIRT int,
-	CELL61B int, CELL61R int, CELL61W int,
-	CELL62B int, CELL62R int, CELL62W int,
-	CELL63B int, CELL63R int, CELL63W int,
-	CELL64B int, CELL64R int, CELL64W int,
-	CELL65B int, CELL65R int, CELL65W int,
-	CELL66B int, CELL66R int, CELL66W int,
-	CELL70DIRT int,
-	CELL71B int, CELL71R int, CELL71W int,
-	CELL72B int, CELL72R int, CELL72W int,
-	CELL73B int, CELL73R int, CELL73W int,
-	CELL74B int, CELL74R int, CELL74W int,
-	CELL75B int, CELL75R int, CELL75W int,
-	CELL76B int, CELL76R int, CELL76W int
-);
-insert into states_parsed 
-(select 
-	game,
-    m.match_id,
-    s.step_number,
+select
 	IF(LOCATE('CONTROL RED',state) > 0, 1, -1) as   CONTROLRED,
 	IF(LOCATE('CONTROL WHITE',state) > 0, 1, -1) as CONTROLWHITE,
 	IF(LOCATE('CELL 1 0 DIRT',state) > 0, 1, -1) as CELL10DIRT,
@@ -195,8 +134,21 @@ insert into states_parsed
 	IF(LOCATE('CELL 7 6 B',state) > 0, 1, -1) as    CELL76B,
 	IF(LOCATE('CELL 7 6 R',state) > 0, 1, -1) as    CELL76R,
 	IF(LOCATE('CELL 7 6 W',state) > 0, 1, -1) as    CELL76W
-	FROM states s
-	INNER JOIN matches m ON m.match_id = s.match_id
-	WHERE
-		m.game = 'connect4'
-);
+FROM 
+    states s, 
+    matches m, 
+    match_players p,
+    moves mo
+where 
+    m.match_id = s.match_id and
+    p.match_id = m.match_id and
+    p.match_id = m.match_id and
+    p.roleindex = mo.roleindex and
+    mo.roleindex = p.roleindex and
+    mo.match_id = m.match_id and
+    mo.step_number = s.step_number and
+
+    m.game = 'chinesecheckers6' and 
+    p.player != 'Random' and
+    mo.move != 'NOOP' and
+    p.roleindex = 0

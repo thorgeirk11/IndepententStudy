@@ -39,45 +39,10 @@ def read_data(file_name, train_data_size, fun):
     test_data =  data[cut:]
     return train_data, test_data
 
-def process_probatility(data):
-    data_dict = defaultdict(list)
-    for v, k in data: data_dict[tuple(v)].append(k)
-    weighted_data = {}
-    for key, labels in data_dict.items():
-        weighed_labels = [0, 0, 0, 0, 0, 0, 0, 0]
-        for label in labels:
-            i = 0
-            for v in label:
-                if (v > 0):
-                    weighed_labels[i] += 1
-                    break
-                i += 1
-        count = len(labels)
-        for i in range(0,len(weighed_labels)):
-            weighed_labels[i] /= count
-        weighted_data[tuple(key)] = weighed_labels
-    return weighted_data
-
-def export_processed_data(data):
-    # save to file:
-    with open('Connect4_train_processed.json', 'w') as f:
-        for k, v in data:
-            line = '{}, {}'.format(k, v) 
-            print(line, file=f)     
-
 def filterData(record):
     meta, key, label = record
     # Only matches where role 1 won
     return meta[2] == 1 and meta[3] == 100
-
-def guess_dumbly(data):
-    correct = [0,0,0,0,0,0,0,0]
-    for v, k in data:
-        for i in range(0, len(k)):
-            if (k[i] == 1):
-                correct[i] += 1
-    print(correct)
-    print(len(data))
 
 def read_from_csv(batch_size):
     features = []
@@ -103,31 +68,38 @@ def fully_connected_network(layers):
         network = x_pretty
         i = 1
         for size in layers:
-            network.fully_connected(size=size, name='layer_fc{0}'.format(i))
+            #with tf.name_scope('fully_connected'):
+            network = network.fully_connected(size=size, name='layer_fc{0}'.format(i))
             i += 1
-        y_pred, _ = network.softmax_classifier(num_classes=num_actions, labels=y_true)
-        loss = tf.reduce_mean(tf.squared_difference(y_pred, y_true))
+        with tf.name_scope("softmax"):
+            y_pred, _ = network.softmax(labels=y_true)
+            loss = tf.reduce_mean(tf.squared_difference(y_pred, y_true))
 
-        y_pred_cls = tf.argmax(y_pred, dimension=1)
-        correct_prediction = tf.equal(y_pred_cls, y_true_cls)
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        optimizer = tf.train.AdamOptimizer(learning_rate=1e-3).minimize(loss)
+        with tf.name_scope("accuracy"):
+            y_pred_cls = tf.argmax(y_pred, dimension=1)
+            correct_prediction = tf.equal(y_pred_cls, y_true_cls)
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        
+        with tf.name_scope("train"):
+            optimizer = tf.train.AdamOptimizer().minimize(loss)
+        
         name = ', '.join(str(x) for x in layers) 
         return (name, optimizer, accuracy, ([],[]))
 
 networks = [ 
-    fully_connected_network([500,100,250,50,250,1000,5000])
+    fully_connected_network([200,100,200,100,200,8])
 ]
 
     
 # Splits the training and test data 80/20.
-train_data, test_data = read_data('data/Connect4_data_Step&BothRoles2.csv', 0.8, filterData)
+train_data, test_data = read_data('data/connect4_big.csv', 0.8, filterData)
 #probatilities = process_probatility(train_data + test_data)
 #guess_dumbly(train_data+test_data)
 
-
 session = tf.Session()
 session.run(tf.global_variables_initializer())
+file_writer = tf.summary.FileWriter('/logs/4')
+file_writer.add_graph(session.graph)
 
 train_batch_size = 64
 
@@ -167,25 +139,6 @@ def optimize(num_iterations):
     end_time = time.time()
     time_dif = end_time - start_time
     print("Time usage: " + str(timedelta(seconds=int(round(time_dif)))))
-
-def argmax_label(label):
-    maxi = 0
-    for i in range(0, len(label)):
-        if (label[i] > label[maxi]):
-            maxi = i
-    return maxi
-
-
-def showPlot():
-    for (name, (x,y)) in [(i[0], i[3]) for i in networks]:
-        plt.plot(x,y,label=name)
-    plt.ylabel('Test Accuracy (%)')
-    plt.xlabel('Optimization Iteration')
-    plt.title("Plot")
-    plt.legend()
-    plt.savefig('Plot.png')
-    plt.show()
-
 
 
 optimize(8000)

@@ -88,20 +88,27 @@ def fully_connected_network(layers):
         network = x_pretty
         i = 1
         for size in layers:
-            network.fully_connected(size=size, name='layer_fc{0}'.format(i))
+            #with tf.name_scope('fully_connected'):
+            network = network.fully_connected(size=size, name='layer_fc{0}_{1}'.format(i, size))
             i += 1
-        y_pred, _ = network.softmax_classifier(num_classes=num_actions, labels=y_true)
-        loss = tf.reduce_mean(tf.squared_difference(y_pred, y_true))
-        print(y_pred)
-        y_pred_cls = tf.argmax(y_pred, dimension=1)
-        correct_prediction = tf.equal(y_pred_cls, y_true_cls)
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        optimizer = tf.train.AdamOptimizer(learning_rate=1e-3).minimize(loss)
+        with tf.name_scope("softmax"):
+            y_pred, _ = network.softmax_classifier(num_classes=num_actions, labels=y_true)
+            loss = tf.reduce_mean(tf.squared_difference(y_pred, y_true))
+
+        with tf.name_scope("accuracy"):
+            y_pred_cls = tf.argmax(y_pred, dimension=1)
+            correct_prediction = tf.equal(y_pred_cls, y_true_cls)
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        
+        with tf.name_scope("train"):
+            optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(loss)
+
         name = ', '.join(str(x) for x in layers) 
         return (name, optimizer, accuracy, ([],[]), (y_pred,loss))
 
 networks = [ 
-    fully_connected_network([1000,250,1000,250,1000])
+    fully_connected_network([1000,500,1000])
+    #fully_connected_network([128,64,128,64,128])
 ]
 
     
@@ -113,8 +120,10 @@ probatilities = process_probatility(train_data + test_data)
 
 session = tf.Session()
 session.run(tf.global_variables_initializer())
+file_writer = tf.summary.FileWriter('/logs/1')
+file_writer.add_graph(session.graph)
 
-train_batch_size = 64
+train_batch_size = 500
 
 def optimize(num_iterations):
     # Start-time used for printing time-usage below.
@@ -133,38 +142,42 @@ def optimize(num_iterations):
         for name, optimizer, accuracy, (plotx,ploty), (y_pred, loss) in networks:
             session.run(optimizer, feed_dict=feed_dict_train)
 
-            if i % 1000 == 0:
+            if i % 100 == 0:
                 acc = session.run(accuracy, feed_dict=feed_dict_test)
                 if (acc > best):
                     best = acc
                     since_last_best = 0
                 plotx.append(i)
                 ploty.append(acc)
-                msg = "Optimization Iteration: {0:>6} Test Correct {1:>6.1%} Best {2}"
-                print(msg.format(i + 1, acc, best))
 
-                np.set_printoptions(precision=2)
-                key, label = random.choice(test_data)
-
-                feed_dict_2 = {x: [key],
-                                y_true: [label] }
-                predictied = session.run(y_pred, feed_dict= feed_dict_2)
-
-                print("Predicted {0}".format(predictied[0]))
-                print("Was {0}".format(label))
-
-                print("Predicted {0} was {1}".format(session.run(tf.argmax(predictied, dimension=1))[0],argmax_label(label)))
-
-                arr = list(predictied[0])
-                for i in label:
-                    if (i > 0):
-                        arr.append(0.3)
-                    else:
-                        arr.append(0)
+                loss_acc_train = session.run(loss, feed_dict=feed_dict_train)
+                loss_acc = session.run(loss, feed_dict=feed_dict_test)
                 
-                d = np.reshape(arr, (-1, 10))
-                plt.imshow(d, cmap='hot', interpolation='nearest')
-                plt.show()
+                msg = "Iteration: {0:>6}, Train Accuracy: {1:>6.1%}, Test Accuracy: {2:>6.1%} Test Correct {3:>6.1%} Best {4}"
+                print(msg.format(i + 1, 1-loss_acc_train, 1-loss_acc, acc, best))
+
+                #np.set_printoptions(precision=2)
+                #key, label = random.choice(test_data)
+#
+                #feed_dict_2 = {x: [key],
+                #                y_true: [label] }
+                #predictied = session.run(y_pred, feed_dict= feed_dict_2)
+#
+                #print("Predicted {0}".format(predictied[0]))
+                #print("Was {0}".format(label))
+#
+                #print("Predicted {0} was {1}".format(session.run(tf.argmax(predictied, dimension=1))[0],argmax_label(label)))
+
+               #arr = list(predictied[0])
+               #for i in label:
+               #    if (i > 0):
+               #        arr.append(0.3)
+               #    else:
+               #        arr.append(0)
+               #
+               #d = np.reshape(arr, (-1, 10))
+               #plt.imshow(d, cmap='hot', interpolation='nearest')
+               #plt.show()
 
 
         since_last_best += 1

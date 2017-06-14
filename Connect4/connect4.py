@@ -39,7 +39,7 @@ def read_data(file_name, train_data_size, fun):
   
 def filterData(record):
     meta, _, _ = record
-    return meta[2] == 0 and meta[3] == 100
+    return meta[2] == 0 and meta[3] > 0
 
 def read_from_csv(batch_size):
     features = []
@@ -50,6 +50,9 @@ def read_from_csv(batch_size):
         labels.append(label)
     return features, labels
 
+# Splits the training and test data 80/20.
+train_data, test_data = read_data('data/connect4_big_without_NoOp.csv', 0.8, filterData)
+
 # -------------------------------------------------------------------
 #                           Create Model
 # -------------------------------------------------------------------
@@ -58,46 +61,48 @@ x = tf.placeholder(tf.float32, shape=[None, state_size], name='x')
 y_true = tf.placeholder(tf.float32, shape=[None, num_actions], name='y_true')
 y_true_cls = tf.argmax(y_true, dimension=1)
 
-def fully_connected_network(layers, name):
+def fully_connected_network(layers, learning_rate):
     x_pretty = pt.wrap(x)
     with pt.defaults_scope(activation_fn=tf.nn.relu):
         network = x_pretty
         i = 1
         for size in layers:
-            network = network.fully_connected(size=size, name='{0}_layer_fc{1}_{2}'.format(name, i, size))
+            network = network.fully_connected(size=size, name='layer_fc{0}_{1}'.format(i, size))
             i += 1
-        with tf.name_scope("{0}_softmax".format(name)):
+        with tf.name_scope("loss"):     
+            network = network.fully_connected(size=num_actions)
             y_pred, _ = network.softmax(labels=y_true)
             loss = tf.reduce_mean(tf.squared_difference(y_pred, y_true))
-            tf.summary.scalar("{0}_softmax".format(name), loss)
+            tf.summary.scalar("loss", loss)
 
-        with tf.name_scope("{0}_accuracy".format(name)):
+        with tf.name_scope("accuracy"):
             y_pred_cls = tf.argmax(y_pred, dimension=1)
             correct_prediction = tf.equal(y_pred_cls, y_true_cls)
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-            tf.summary.scalar("{0}_accuracy".format(name), accuracy)
+            tf.summary.scalar("accuracy", accuracy)
 
-        with tf.name_scope("{0}_train".format(name)):
-            optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(loss)
+        with tf.name_scope("train"):
+            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
-        name = ', '.join(str(x) for x in layers[:len(layers)-1]) 
-        return (name, optimizer, accuracy)
 
-network = fully_connected_network([128,64,128,64,128,8], "A")
+        return optimizer, accuracy
+
     
-# Splits the training and test data 80/20.
-train_data, test_data = read_data('data/connect4_big.csv', 0.8, filterData)
+optimizer, accuracy = fully_connected_network([128,64,128,64,128], 1e-4)
+
 
 # -------------------------------------------------------------------
 #                           Train Model
 # -------------------------------------------------------------------
 
+
 session = tf.Session()
 session.run(tf.global_variables_initializer())
 
-merged_summary = tf.summary.merge_all()
-file_writer = tf.summary.FileWriter('/logs/5')
-file_writer.add_graph(session.graph)
+
+#merged_summary = tf.summary.merge_all()
+#file_writer = tf.summary.FileWriter('/logs/5')
+#file_writer.add_graph(session.graph)
 
 train_batch_size = 64
 
@@ -110,29 +115,30 @@ def optimize(num_iterations):
                       y_true: [i[1] for i in test_data] }
     i = 0
     while True:
-        i+=1
         x_batch, y_true_batch = read_from_csv(train_batch_size)
 
         feed_dict_train = {x: x_batch,
                            y_true: y_true_batch}
-        _, optimizer, _ = network
+        
         session.run(optimizer, feed_dict=feed_dict_train)
 
-        if i % 5 == 0:
-            #for name, _, accuracy in networks:
-            s = session.run(merged_summary, feed_dict=feed_dict_test)
-            file_writer.add_summary(s,i)
-                #acc = session.run(accuracy, feed_dict=feed_dict_test)
-                #if (acc > best):
-                #    best = acc
-                #    since_last_best = 0
+        if i % 10 == 0:
+            #s = session.run(merged_summary, feed_dict=feed_dict_test)
+            #file_writer.add_summary(s,i)
+            train_acc = session.run(accuracy, feed_dict=feed_dict_train)
+            test_acc = session.run(accuracy, feed_dict=feed_dict_test)
+            if (test_acc > best):
+                best = test_acc
+                since_last_best = 0
 
-                #msg = "Optimization Iteration: {0:>6} Test Correct {1:>6.1%} Best {2}"
-                #print(msg.format(i + 1, acc, best))
+            msg = "Iteration: {0:>6} Train Correct {1:>6.1%} Test Correct {2:>6.1%} Best {3:>6.3%}"
+            print(msg.format(i + 1, train_acc, test_acc, best))
             
         since_last_best += 1
         if since_last_best > num_iterations:
             break
+            
+        i+=1
 
     end_time = time.time()
     time_dif = end_time - start_time

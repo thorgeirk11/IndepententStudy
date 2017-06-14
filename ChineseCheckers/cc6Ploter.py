@@ -13,8 +13,9 @@ import prettytensor as pt
 import pandas as pd
 import random
 
+LOG_PATH = '/logs/cc6/cmp6/'
 
-num_iterations = 50000
+num_iterations = 100000
 
 metadata_size = 4
 state_size = 253
@@ -39,7 +40,7 @@ def read_data(file_name, train_data_size, fun):
   
 def filterData(record):
     meta, _, _ = record
-    return meta[2] == 0 and meta[3] == 100
+    return meta[2] == 0 and meta[3] > 0
 
 def read_from_csv(batch_size):
     features = []
@@ -104,10 +105,13 @@ def BuildAndTrain(layers, learning_rate):
     session.run(tf.global_variables_initializer())
 
     merged_summary = tf.summary.merge_all()
-    file_writer = tf.summary.FileWriter('/logs/cc6/cmp3/' + hparam)
-    file_writer.add_graph(session.graph)
+    test_writer = tf.summary.FileWriter(LOG_PATH  + hparam)
+    test_writer.add_graph(session.graph)
+
+    #train_writer = tf.summary.FileWriter(LOG_PATH + '/train/' + hparam)
+    #train_writer.add_graph(session.graph)
     
-    # Start-time used for printing time-usage below.
+    #Start-time used for printing time-usage below.
     start_time = time.time()
 
     feed_dict_test = {x: [i[0] for i in test_data] ,
@@ -119,23 +123,21 @@ def BuildAndTrain(layers, learning_rate):
                             y_true: y_true_batch}
         session.run(optimizer, feed_dict=feed_dict_train)
         if i % 10 == 0:
-            s = session.run(merged_summary, feed_dict=feed_dict_test)
-            file_writer.add_summary(s,i)
+            #s, train_acc = session.run([merged_summary, accuracy], feed_dict=feed_dict_train)
+            #train_writer.add_summary(s,i)
+            
+            s, test_acc = session.run([merged_summary, accuracy], feed_dict=feed_dict_test)
+            test_writer.add_summary(s,i)
+
+        #msg = "Optimization Iteration: {0:>6} Test Correct {1:>6.1%} Best {2}"
+        #print(msg.format(i + 1, train_acc, best))
+
     end_time = time.time()
     time_dif = end_time - start_time
     print("Time usage: " + str(timedelta(seconds=int(round(time_dif)))))
 
 networks = [ 
     BuildAndTrain([], learning_rate=1e-4),
-    BuildAndTrain([100], learning_rate=1e-4),
-    BuildAndTrain([100,50,25,50,25,50,100], learning_rate=1e-4),
-    BuildAndTrain([128,64,128], learning_rate=1e-3),
-    BuildAndTrain([128,64,128,64,128], learning_rate=1e-4),
-    BuildAndTrain([128,64,128,64,128], learning_rate=1e-3),
-    BuildAndTrain([128,64,128], learning_rate=1e-4),
-    BuildAndTrain([128,64,128], learning_rate=1e-3),
-    BuildAndTrain([1000,250,500,250,1000], learning_rate=1e-4),
     BuildAndTrain([1000,250,500,250,1000], learning_rate=1e-3),
-    BuildAndTrain([2000,500,2000], learning_rate=1e-4),
-    BuildAndTrain([2000,500,2000], learning_rate=1e-3),
+    BuildAndTrain([5000,2500,500,2500,1000], learning_rate=1e-3),
 ]

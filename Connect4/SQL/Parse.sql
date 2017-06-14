@@ -139,7 +139,7 @@ select
 	IF(LOCATE('CELL 7 6 R',state) > 0, 1, -1),    
 	IF(LOCATE('CELL 7 6 W',state) > 0, 1, -1),    
 	locate('NOOP', move),
-    locate('(DROP 1),', move),
+    locate('(DROP 1)', move),
     locate('(DROP 2)', move),
     locate('(DROP 3)', move),
     locate('(DROP 4)', move),
@@ -165,6 +165,6 @@ where
     #mo.move != 'NOOP' and
     #p.roleindex = 0
 
-INTO OUTFILE 'connect4_role0_noNoop.csv'
+INTO OUTFILE 'connect4_big.csv'
 FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n';

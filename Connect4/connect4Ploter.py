@@ -41,7 +41,7 @@ def read_data(file_name, train_data_size, fun):
   
 def filterData(record):
     meta, _, _ = record
-    return meta[2] == 0 and meta[3] == 100
+    return meta[2] == 0 and meta[3] > 0
 
 def read_from_csv(batch_size):
     features = []
@@ -53,7 +53,7 @@ def read_from_csv(batch_size):
     return features, labels
     
 # Splits the training and test data 80/20.
-train_data, test_data = read_data('data/connect4_big.csv', 0.8, filterData)
+train_data, test_data = read_data('data/connect4_big_without_NoOp.csv', 0.8, filterData)
 
 # -------------------------------------------------------------------
 #                           Create Model
@@ -68,7 +68,7 @@ def BuildAndTrain(layers, learning_rate):
     y_true = tf.placeholder(tf.float32, shape=[None, num_actions], name='y_true')
     y_true_cls = tf.argmax(y_true, dimension=1)
 
-    hparam = '_'.join(str(x) for x in layers[:len(layers)-1]) + '_LR_' + str(learning_rate) 
+    hparam = '_'.join(str(x) for x in layers[:len(layers)]) + '_LR_' + str(learning_rate) 
    
     # -------------------------------------------------------------------
     #                           Pretty Network
@@ -106,7 +106,8 @@ def BuildAndTrain(layers, learning_rate):
     session.run(tf.global_variables_initializer())
 
     merged_summary = tf.summary.merge_all()
-    file_writer = tf.summary.FileWriter('/logs/cmp5/' + hparam)
+    file_writer = tf.summary.FileWriter('/logs/cmp11
+    /' + hparam)
     file_writer.add_graph(session.graph)
     
     # Start-time used for printing time-usage below.
@@ -128,14 +129,11 @@ def BuildAndTrain(layers, learning_rate):
     print("Time usage: " + str(timedelta(seconds=int(round(time_dif)))))
 
 networks = [ 
-    BuildAndTrain([128,64,128,64,128], learning_rate=1e-5),
+    BuildAndTrain([], learning_rate=1e-4),
+    BuildAndTrain([20,10,20], learning_rate=1e-4),
+    BuildAndTrain([128,64,128], learning_rate=1e-4),
     BuildAndTrain([128,64,128,64,128], learning_rate=1e-4),
     BuildAndTrain([128,64,128,64,128], learning_rate=1e-3),
-    BuildAndTrain([128,64,128], learning_rate=1e-5),
-    BuildAndTrain([128,64,128], learning_rate=1e-4),
-    BuildAndTrain([128,64,128], learning_rate=1e-3),
-    BuildAndTrain([1000,250,500,250,1000], learning_rate=1e-5),
     BuildAndTrain([1000,250,500,250,1000], learning_rate=1e-4),
     BuildAndTrain([1000,250,500,250,1000], learning_rate=1e-3),
-    BuildAndTrain([], learning_rate=1e-4)
 ]

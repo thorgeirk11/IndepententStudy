@@ -13,9 +13,9 @@ import prettytensor as pt
 import pandas as pd
 import random
 
-LOG_PATH = '/logs/cc6/cmp6/'
+LOG_PATH = '/logs/cc6/cmp20/'
 
-num_iterations = 100000
+num_iterations = 10000
 
 metadata_size = 4
 state_size = 253
@@ -59,7 +59,7 @@ train_data, test_data = read_data('data/chinese_checkers_6_role0_noNoop.csv', 0.
 # -------------------------------------------------------------------
 
 
-def BuildAndTrain(layers, learning_rate):
+def BuildAndTrain(layers, learning_rate, activation):
     tf.reset_default_graph()
     session = tf.Session()
 
@@ -67,13 +67,13 @@ def BuildAndTrain(layers, learning_rate):
     y_true = tf.placeholder(tf.float32, shape=[None, num_actions], name='y_true')
     y_true_cls = tf.argmax(y_true, dimension=1)
 
-    hparam = '_'.join(str(x) for x in layers[:len(layers)]) + '_LR_' + str(learning_rate) 
+    hparam = '_'.join(str(x) for x in layers[:len(layers)]) + '_LR_' + str(learning_rate) + '_' + ('none' if activation == None else "relu")
    
     # -------------------------------------------------------------------
     #                           Pretty Network
     # -------------------------------------------------------------------
     x_pretty = pt.wrap(x)
-    with pt.defaults_scope(activation_fn=tf.nn.relu):
+    with pt.defaults_scope(activation_fn=activation):
         network = x_pretty
         i = 1
         for size in layers:
@@ -81,9 +81,7 @@ def BuildAndTrain(layers, learning_rate):
             i += 1
 
         with tf.name_scope("loss"):     
-            network = network.fully_connected(size=num_actions)
-            y_pred, _ = network.softmax(labels=y_true)
-            loss = tf.reduce_mean(tf.squared_difference(y_pred, y_true))
+            y_pred, loss = network.softmax_classifier(num_classes=num_actions, labels=y_true)
             tf.summary.scalar("loss", loss)
 
         with tf.name_scope("accuracy"):
@@ -136,8 +134,11 @@ def BuildAndTrain(layers, learning_rate):
     time_dif = end_time - start_time
     print("Time usage: " + str(timedelta(seconds=int(round(time_dif)))))
 
-networks = [ 
+networks = [
     BuildAndTrain([], learning_rate=1e-4),
+    BuildAndTrain([10000], learning_rate=1e-5),
+    BuildAndTrain([10000], learning_rate=1e-4),
     BuildAndTrain([1000,250,500,250,1000], learning_rate=1e-3),
-    BuildAndTrain([5000,2500,500,2500,1000], learning_rate=1e-3),
+    BuildAndTrain([500,250,500,250,100], learning_rate=1e-4),
+    BuildAndTrain([500,250,500,250,100], learning_rate=1e-3),
 ]

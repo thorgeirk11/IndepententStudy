@@ -1,4 +1,4 @@
-# Indipendant Study
+# Indepentent Study
 
 ## Introduction
 General game playing (GGP) seeks to create intelligent agents capable of independently playing many different games effectively without knowing the rules of the game beforehand. Humans have the ability of learning a strategy in one game and apply it on another, effectively transferring the knowledge gained between games. This ability has been hard to replicate in GGP agents.  

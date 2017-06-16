@@ -20,47 +20,82 @@ A considerable part of the project is to figure out a good structure for the  ne
 # Tutorial and Supporting metarials
 
 Here is a list of tutorials which I found really usefull:
-    - These tutorials will walk you throught the basics of tensorflow:
-        Youtube chanel: https://www.youtube.com/watch?v=wuo4JdG3SvU&list=PL9Hr9sNUjfsmEu1ZniY0XpHSzl5uihcXZ
-        Git repo with code: https://github.com/Hvass-Labs/TensorFlow-Tutorials/
-    
-    - Tenorboard is fantastic in visulizing model and the accuracy: https://www.tensorflow.org/get_started/summaries_and_tensorboard
-    
-    - For saving and restoring subgraphs: https://blog.metaflow.fr/tensorflow-saving-restoring-and-mixing-multiple-models-c4c94d5d7125
+- These tutorials will walk you throught the basics of tensorflow:
+  Youtube chanel: https://www.youtube.com/watch?v=wuo4JdG3SvU&list=PL9Hr9sNUjfsmEu1ZniY0XpHSzl5uihcXZ
+  Git repo with code: https://github.com/Hvass-Labs/TensorFlow-Tutorials/
+- Tenorboard is fantastic in visulizing model and the accuracy: https://www.tensorflow.org/get_started/summaries_and_tensorboard
+- For saving and restoring subgraphs: https://blog.metaflow.fr/tensorflow-saving-restoring-and-mixing-multiple-models-c4c94d5d7125
 
 ## Training data
 The data is taken from a GGP database [Citation Needed]. 
 The states for the games are extracted from the database using the Parse.sql file located under the sql folder for each game. The Parse.sql file selects the states and the actions performed on that state for each role in the given game. It outputs a .csv file containg the state and actions.
 
 Example line form the training data .csv:
-    Match.connect4.1240881643605,9,0,0,-1,1,1,-1,-1,1,-1,1,-1,-1,1,-1,-1,1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,0,0,0,0,0,0,1,0
-This example is taken from connect4. Here we see that the first 4 coulums contain some meta data:
-    1. MatchId, not used by the code but might be usefull,
-    2. Step index, tells at which step the state is form the start of the match, 
-    3. Role index, which role dose the action corraspond to.
-    4. Score, the score for the role in this match. Can be used to filter out only moves made by the winning roles.
-Next comes the encoded state, that is there are 135 rules in connect4 and each rule is either true (1) or false (-1). This state represation is used as input into the neural network. 
-The last 9 coulums are the actions performed on the state for the given role. This is called one hot encoding (https://www.tensorflow.org/api_docs/python/tf/one_hot), basicly only one of the actions is performed (1) in a given state and the rest are not performed (0).
+>  Match.connect4.1240881643605,9,0,0,-1,1,1,-1,-1,1,-1,1,-1,-1,1,-1,-1,1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1,-1,0,0,0,0,0,0,1,0
 
+This example is taken from connect4. Here we see that the first 4 coulums contain some meta data:
+
+1. MatchId, not used by the code but might be usefull,
+2. Step index, tells at which step the state is form the start of the match, 
+3. Role index, which role dose the action corraspond to.
+4. Score, the score for the role in this match. Can be used to filter out only moves made by the winning roles.
+
+Next comes the encoded state, that is there are 135 rules in connect4 and each rule is either true (1) or false (-1). This state represation is used as input into the neural network. 
+
+The last 9 coulums are the actions performed on the state for the given role. This is called one hot encoding (https://www.tensorflow.org/api_docs/python/tf/one_hot), basicly only one of the actions is performed (1) in a given state and the rest are not performed (0).
 
 Note that the actions perfomed can be diffrent between roles, see chinese checkers. In chinese checkers the sql files are six one for each role. 
 
 ## Thoguhts while developing
 Connect4 was the first game I converted and trained on, thses are the mistakes that I encounted in the beging.
 
-    - Inperfect data.
-        Always keep in mind that the data is not perfect and often agents perform poorly. This will affect your model and make it harder for it to achive really good accuracy. 
+- Inperfect data.
+    Always keep in mind that the data is not perfect and often agents perform poorly. This will affect your model and make it harder for it to achive really good accuracy. 
 
-    - How to messure accuracy. 
-        One way to mesure accuarcy is the mesure the  distance between the predicted labels and the true labels, using for example sum of sqare diffrentances.
-        Another way is to messure how often the network prediced the correct label. The only problem with this approch is that if for example two actions are equaly likly on a given state then the network will only achive 50% accuracy on that state.
-    
-    - Split up the roles. 
-        That is do not train on the model on both roles with out separation, since the stratigy for each role is diffrent and the network will get confused.
-    
+- Amount of data.
+    For deep neural networks it is better to have more training data than less. This is the reason Connect4, tictactue3d and chines checkers were selected, they contain the most data. The amount of data is however not great, for example chineses checkers for role0 there are 5892 states, which is not a lot.
+
+- How to messure accuracy. 
+    One way to mesure accuarcy is the mesure the  distance between the predicted labels and the true labels, using for example sum of sqare diffrentances.
+    Another way is to messure how often the network prediced the correct label. The only problem with this approch is that if for example two actions are equaly likly on a given state then the network will only achive 50% accuracy on that state.
+
+- Split up the roles. 
+    That is do not train on the model on both roles with out separation, since the stratigy for each role is diffrent and the network will get confused.
 
 # Initial desgin
 
+As described in the problems describition, the task is to desgin a ANN that can train on multiple games where the middle part of the network trains on every game and the input and output layers get changed.
+
+To start off I focused on a single game and tryed out many diffrent variations for networks. I used only fully connected layers in the network 
+
+```py
+state_size = 135
+num_actions = 8
+
+# Input into the network, the state
+input_state = tf.placeholder(tf.float32, shape=[None, state_size], name='input_state')
+# The actual action performed in the state (label)
+y_true = tf.placeholder(tf.float32, shape=[None, num_actions], name='label')
+y_true_cls = tf.argmax(y_true, dimension=1)
+
+input_state_pretty = pt.wrap(input_state)
+with pt.defaults_scope(activation_fn=tf.nn.relu):
+    pred_action, _ = input_state_pretty.\
+        fully_connected(size=128, name='layer_fc2').\
+        fully_connected(size=64,  name='layer_fc3').\
+        fully_connected(size=128, name='layer_fc4').\
+        fully_connected(size=64,  name='layer_fc5').\
+        fully_connected(size=128, name='layer_fc6').\
+        softmax_classifier(num_classes=num_actions, labels=y_true)
+loss = tf.reduce_mean(tf.squared_difference(pred_action, y_true))
+
+y_pred_cls = tf.argmax(pred_action, dimension=1)
+correct_prediction = tf.equal(y_pred_cls, y_true_cls)
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(loss)
+```
+
+This is the initial setup of the network, 
 
 
 # Initial results 

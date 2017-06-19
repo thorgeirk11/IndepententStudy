@@ -18,6 +18,8 @@ metadata_size = 4
 state_size = 253
 num_actions = 90
 
+TRAIN_TEST_RATIO = 0.8 # Split the data train/test 80% train and 20% test
+
 # -------------------------------------------------------------------
 #                           Read Data
 # -------------------------------------------------------------------
@@ -50,9 +52,6 @@ def read_from_csv(batch_size, train_data):
 
 # Splits the training and test data 80/20.
 
-train_data_role0, test_data_role0 = read_data('../data/chinese_checkers_6_role0_noNoop.csv', 0.8, filterData)
-train_data_role1, test_data_role1 = read_data('../data/chinese_checkers_6_role1_noNoop.csv', 0.8, filterData)
-
 
 print('Role 0 data: train {0} test {1}'.format(len(train_data_role0),len(test_data_role0)))
 print('Role 1 data: train {0} test {1}'.format(len(train_data_role1),len(test_data_role1)))
@@ -72,13 +71,20 @@ middle_net = nc.middle_network([100,50,100], input_net)
 output_net_role0 = nc.output_network([250], middle_net, 'role0')
 output_net_role1 = nc.output_network([250], middle_net, 'role1')
 
-test_feed_dict_role0 = {x: [i[0] for i in test_data_role0], y_true: [i[1] for i in test_data_role0] }
-test_feed_dict_role1 = {x: [i[0] for i in test_data_role1], y_true: [i[1] for i in test_data_role1] }
 
-role_networks = [ 
-    (nc.softmax_adamOptimizer(output_net_role0, y_true, 1e-3, 'role0'), train_data_role0, test_feed_dict_role0, 0),
-    (nc.softmax_adamOptimizer(output_net_role1, y_true, 1e-3, 'role1'), train_data_role1, test_feed_dict_role1, 1),
-]
+
+role_networks = []
+
+for i in range(6):
+    data_path = 'data/chinese_checkers_6_role{0}_noNoop.csv'.format(i)
+    train_data, test_data = read_data(data_path, TRAIN_TEST_RATIO, filterData)
+
+    test_feed_dict = {x: [i[0] for i in test_data], y_true: [i[1] for i in test_data] }
+    
+    network = (nc.softmax_adamOptimizer(output_net_role0, y_true, 1e-3, 'role0'), train_data, test_feed_dict, i)
+    
+    role_networks.append(network)
+
 
 
 # -------------------------------------------------------------------

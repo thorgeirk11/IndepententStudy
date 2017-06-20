@@ -6,12 +6,12 @@ import numpy
 import pandas as pd
 import random
 
+from keras.callbacks import TensorBoard
 from keras.layers import Input, Dense, Dropout
 from keras.models import Model, Sequential
 from keras import backend as K
 
 TRAIN_TEST_RATIO = 0.8 # Splits the training and test data 80/20.
-learning_rate = 1e-4
 metadata_size = 4 
 
 
@@ -41,15 +41,17 @@ with tf.name_scope("input_network"):
     in_cc6 = Input(shape=(253,))
 
     con4 = Dense(150, activation='relu')(in_con4)
-    cc6 = Dense(150, activation='relu')(in_cc6)
+    con4 = Dense(75, activation='relu')(con4)
+    cc6 = Dense(200, activation='relu')(in_cc6)
+    cc6 = Dense(75, activation='relu')(cc6)
 
 with tf.name_scope("middle_network"):
-    #middle = Sequential([
-    #    Dense(100, activation='relu', input_shape=(150,)),
-    #    Dense(100, activation='relu'),
-    #    Dense(100, activation='relu')
-    #])
-    middle = Dense(100, activation='relu')
+    middle = Sequential([
+        Dense(100, activation='relu', input_shape=(75,)),
+        Dropout(0.5),
+        Dense(100, activation='relu')
+    ])
+    #middle = Dense(100, activation='relu')
     con4_mid = middle(con4)
     cc6_mid = middle(cc6)
 
@@ -65,33 +67,33 @@ with tf.name_scope("output_network"):
     con4_role1_model = Model(inputs=in_con4, outputs=con4_role1)
 
 with tf.name_scope("output_network"):
-    cc6_role0 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role0 = Dense(90, activation='softmax')(cc6_role0)
+    #cc6_role0 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role0 = Dense(90, activation='softmax')(cc6_mid)
     cc6_role0_model = Model(inputs=in_cc6, outputs=cc6_role0)
 
 with tf.name_scope("output_network"):
-    cc6_role1 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role1 = Dense(90, activation='softmax')(cc6_role1)
+    #cc6_role1 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role1 = Dense(90, activation='softmax')(cc6_mid)
     cc6_role1_model = Model(inputs=in_cc6, outputs=cc6_role1)
 
 with tf.name_scope("output_network"):
-    cc6_role2 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role2 = Dense(90, activation='softmax')(cc6_role2)
+    #cc6_role2 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role2 = Dense(90, activation='softmax')(cc6_mid)
     cc6_role2_model = Model(inputs=in_cc6, outputs=cc6_role2)
 
 with tf.name_scope("output_network"):
-    cc6_role3 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role3 = Dense(90, activation='softmax')(cc6_role3)
+    #cc6_role3 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role3 = Dense(90, activation='softmax')(cc6_mid)
     cc6_role3_model = Model(inputs=in_cc6, outputs=cc6_role3)
 
 with tf.name_scope("output_network"):
-    cc6_role4 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role4 = Dense(90, activation='softmax')(cc6_role4)
+    #cc6_role4 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role4 = Dense(90, activation='softmax')(cc6_mid)
     cc6_role4_model = Model(inputs=in_cc6, outputs=cc6_role4)
 
 with tf.name_scope("output_network"):
-    cc6_role5 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role5 = Dense(90, activation='softmax')(cc6_role5)
+    #cc6_role5 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role5 = Dense(90, activation='softmax')(cc6_mid)
     cc6_role5_model = Model(inputs=in_cc6, outputs=cc6_role5)
 
 
@@ -117,7 +119,7 @@ K.set_session(session)
 session.run(tf.global_variables_initializer())
 
 
-model_trainigs = []
+train_infos = []
 for model, input_tensor, name, role, state_size, num_actions in models:
     with tf.name_scope("Optimizer"):
         model.compile(optimizer='adam',
@@ -128,30 +130,34 @@ for model, input_tensor, name, role, state_size, num_actions in models:
     train_data, test_data = read_data(file_path, state_size, num_actions, TRAIN_TEST_RATIO)
     print('{0} | train {1} test {2}'.format(file_path, len(train_data),len(test_data)))
 
-    summary_writer = tf.summary.FileWriter('/multygame_keras/{0}/role_{1}'.format(name,role))
-    summary_writer.add_graph(session.graph)
-    
-    train_info = (model, train_data, test_data, summary_writer, name, role)
-    model_trainigs.append(train_info)
+    tensorboard_callback = TensorBoard(log_dir='/multygame_keras/{0}/role_{1}'.format(name,role))
+
+    train_input = [x[0] for x in train_data]
+    train_labels = [x[1] for x in train_data]
+    test_input = [x[0] for x in test_data]
+    test_labels = [x[1] for x in test_data]
+
+    train_info = (
+        model, 
+        (train_input, train_labels), 
+        (test_input, test_labels), 
+        tensorboard_callback
+    )
+    train_infos.append(train_info)
 
 
-while True:
-    for model, train_data, test_data, summary_writer,name,role in model_trainigs:
-        
-        train_input = [x[0] for x in train_data]
-        train_labels = [x[1] for x in train_data]
-        
-        test_input = [x[0] for x in test_data]
-        test_labels = [x[1] for x in test_data]
-
-        print('Fit: {0} role{1}'.format(name,role))
+def optimize(train_infos):
+    for model, train_data, test_data, tensorboard_callback in train_infos:
         model.fit(
-            np.array(train_input),
-            np.array(train_labels),
-            batch_size=64,
+            np.array(train_data[0]),
+            np.array(train_data[1]),
+            batch_size=32,
             epochs=10,
-            validation_data=(np.array(test_input),np.array(test_labels)))
+            validation_data=(np.array(test_data[0]), np.array(test_data[1])),
+            callbacks=[tensorboard_callback]
+        )
 
 
 
-
+optimize(train_infos[1:])
+optimize(train_infos[:1])

@@ -2,169 +2,156 @@
 
 import tensorflow as tf
 import numpy as np
-#from sklearn.metrics import confusion_matrix
-import time
-from datetime import timedelta
-import math
 import numpy
 import pandas as pd
 import random
 
-from keras.layers import Dense, Dropout
+from keras.layers import Input, Dense, Dropout
+from keras.models import Model, Sequential
 from keras import backend as K
-
-input_formats = [
-    # ( file_name ( metadata_size, state_size, num_actions ) num_roles )
-    ("Connect4/data/connect4_role{0}.csv",              (4, 135, 8 ), 2), 
-    ("ChineseCheckers/data/chinese_checkers_6_role{0}.csv",  (4, 253, 90), 6),
-]
 
 TRAIN_TEST_RATIO = 0.8 # Splits the training and test data 80/20.
 learning_rate = 1e-4
+metadata_size = 4 
+
 
 # -------------------------------------------------------------------
 #                           Read Data
 # -------------------------------------------------------------------
 
-def read_data(file_name, game_info, train_data_size, fun):
-    metadata_size, state_size, num_actions = game_info
+def read_data(file_name, state_size, num_actions, train_data_size):
     meta = pd.read_csv(file_name, usecols = range(0,metadata_size), header = None)
     features = pd.read_csv(file_name, usecols = range(metadata_size, metadata_size + state_size), header = None)
     labels  = pd.read_csv(file_name, usecols = range(metadata_size + state_size, metadata_size + state_size + num_actions), header = None)
     
     data = list(zip(meta.values, features.values, labels.values))
-    data = [(item[1],item[2]) for item in data if fun(item)]
+    data = [(item[1],item[2]) for item in data if item[0][3] != 0]
 
     cut = int(len(data) * train_data_size)
     train_data = data[:cut]
     test_data =  data[cut:]
     return train_data, test_data
-  
-def filterData(record):
-    meta, _, _ = record
-    return meta[3] != 0
-
-def read_from_csv(batch_size, train_data):
-    features = []
-    labels = []
-    for i in range(0, batch_size):
-        feature, label = random.choice(train_data)
-        features.append(feature)
-        labels.append(label)
-    return features, labels
 
 # -------------------------------------------------------------------
 #                           Create Model                             
 # -------------------------------------------------------------------
 
+with tf.name_scope("input_network"):
+    in_con4 = Input(shape=(135,))
+    in_cc6 = Input(shape=(253,))
 
-input_nets = []
-input_states_dict = {}
-for _, (_, state_size, _), _ in input_formats:
-    input_state = tf.placeholder(tf.float32, shape=[None, state_size], name='input_state')
-    
-    with tf.name_scope("input_network"):
-        input_net = Dense(state_size, activation='relu')(input_state)
-        input_nets.append(Dense(50, activation='relu')(input_net))
+    con4 = Dense(150, activation='relu')(in_con4)
+    cc6 = Dense(150, activation='relu')(in_cc6)
 
-# Sum all the input layers together
-input_net = sum(input_nets)
-
-# Middle Layer
 with tf.name_scope("middle_network"):
-    middle_net = Dense(100, activation='relu')(input_net)
-   # middle_net = Dropout(0.5)(middle_net)
-    middle_net = Dense(50, activation='relu')(middle_net)
-    #middle_net = Dropout(0.5)(middle_net)
-    middle_net = Dense(100, activation='relu')(middle_net)
+    #middle = Sequential([
+    #    Dense(100, activation='relu', input_shape=(150,)),
+    #    Dense(100, activation='relu'),
+    #    Dense(100, activation='relu')
+    #])
+    middle = Dense(100, activation='relu')
+    con4_mid = middle(con4)
+    cc6_mid = middle(cc6)
 
-role_networks = []
 
-for file_name,game_info, num_roles in input_formats:
-    _, _, num_actions = game_info
-    true_action = tf.placeholder(tf.float32, shape=[None, num_actions], name='true_action')
-    true_action_cls = tf.argmax(true_action, dimension=1)
-    for role in range(num_roles):
-        with tf.name_scope("output_network"):
-            output_net = Dense(50, activation='relu')(middle_net)
-            pred_action = Dense(num_actions, activation='softmax')(output_net)
-            loss = tf.losses.mean_squared_error(pred_action, true_action)
-        
-        with tf.name_scope("accuracy"):
-            pred_action_cls = tf.argmax(pred_action, dimension=1)
-            correct_prediction = tf.equal(pred_action_cls, true_action_cls)
-            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+with tf.name_scope("output_network"):
+    con4_role0 = Dense(50, activation='relu')(con4_mid)
+    con4_role0 = Dense(8, activation='softmax')(con4_role0)
+    con4_role0_model = Model(inputs=in_con4, outputs=con4_role0)
 
-        with tf.name_scope("train"):
-            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+with tf.name_scope("output_network"):
+    con4_role1 = Dense(50, activation='relu')(con4_mid)
+    con4_role1 = Dense(8, activation='softmax')(con4_role1)
+    con4_role1_model = Model(inputs=in_con4, outputs=con4_role1)
 
-        train_data, test_data = read_data(file_name.format(role), game_info, TRAIN_TEST_RATIO, filterData)
-        print('{0} | train {1} test {2}'.format(file_name.format(role), len(train_data),len(test_data)))
+with tf.name_scope("output_network"):
+    cc6_role0 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role0 = Dense(90, activation='softmax')(cc6_role0)
+    cc6_role0_model = Model(inputs=in_cc6, outputs=cc6_role0)
 
-        test_feed_dict = {
-            input_state: [i[0] for i in test_data], 
-            true_action: [i[1] for i in test_data],
-            K.learning_phase(): 0
-        }
+with tf.name_scope("output_network"):
+    cc6_role1 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role1 = Dense(90, activation='softmax')(cc6_role1)
+    cc6_role1_model = Model(inputs=in_cc6, outputs=cc6_role1)
 
-        # Summaries for tensorboard
-        tf.summary.scalar("loss", loss)
-        tf.summary.scalar("accuracy", accuracy)
+with tf.name_scope("output_network"):
+    cc6_role2 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role2 = Dense(90, activation='softmax')(cc6_role2)
+    cc6_role2_model = Model(inputs=in_cc6, outputs=cc6_role2)
 
-        network = ((optimizer, accuracy, loss), ( ,true_action)train_data, test_feed_dict, role)
-        role_networks.append(network)
+with tf.name_scope("output_network"):
+    cc6_role3 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role3 = Dense(90, activation='softmax')(cc6_role3)
+    cc6_role3_model = Model(inputs=in_cc6, outputs=cc6_role3)
 
+with tf.name_scope("output_network"):
+    cc6_role4 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role4 = Dense(90, activation='softmax')(cc6_role4)
+    cc6_role4_model = Model(inputs=in_cc6, outputs=cc6_role4)
+
+with tf.name_scope("output_network"):
+    cc6_role5 = Dense(100, activation='relu')(cc6_mid)
+    cc6_role5 = Dense(90, activation='softmax')(cc6_role5)
+    cc6_role5_model = Model(inputs=in_cc6, outputs=cc6_role5)
+
+
+# This creates a model that includes
+# the Input layer and three Dense layers
+models = [
+    (con4_role0_model, in_con4, "connect4", 0, 135, 8),
+    (con4_role1_model, in_con4, "connect4", 1, 135, 8),
+    (cc6_role0_model, in_cc6,  "chinese_checkers_6", 0, 253, 90),
+    (cc6_role1_model, in_cc6,  "chinese_checkers_6", 1, 253, 90),
+    (cc6_role2_model, in_cc6,  "chinese_checkers_6", 2, 253, 90),
+    (cc6_role3_model, in_cc6,  "chinese_checkers_6", 3, 253, 90),
+    (cc6_role4_model, in_cc6,  "chinese_checkers_6", 4, 253, 90),
+    (cc6_role5_model, in_cc6,  "chinese_checkers_6", 5, 253, 90),
+]
 
 # -------------------------------------------------------------------
-#                           Train Model
+#                         Setup Training                             
 # -------------------------------------------------------------------
-
-saver = tf.train.Saver()
 
 session = tf.Session()
 K.set_session(session)
 session.run(tf.global_variables_initializer())
-merged_summary = tf.summary.merge_all()
 
-train_batch_size = 200
 
-def optimize(num_iterations, roles, summary_writer):
-    # Start-time used for printing time-usage below.
-    start_time = time.time()
-    #best = 0
-    since_last_best =0 
-    for i in range(0, num_iterations):
-        for (optimizer, accuracy, loss), (input_state, true_action), train_data, feed_dict_test, roleIndex in roles:
-            state_batch, label_true_batch = read_from_csv(train_batch_size, train_data)
-            feed_dict_train = {
-                input_state: state_batch,
-                true_action: label_true_batch,
-                K.learning_phase(): 1
-            }
-            session.run(optimizer, feed_dict=feed_dict_train)
+model_trainigs = []
+for model, input_tensor, name, role, state_size, num_actions in models:
+    with tf.name_scope("Optimizer"):
+        model.compile(optimizer='adam',
+                    loss='mean_squared_error',
+                    metrics=['acc'])
+                  
+    file_path = "{0}/data/{0}_role{1}.csv".format(name,role)
+    train_data, test_data = read_data(file_path, state_size, num_actions, TRAIN_TEST_RATIO)
+    print('{0} | train {1} test {2}'.format(file_path, len(train_data),len(test_data)))
 
-            if i % 10 == 0:
-                if summary_writer != None:
-                    s = session.run(merged_summary, feed_dict=feed_dict_test)
-                    summary_writer.add_summary(s,i)
+    summary_writer = tf.summary.FileWriter('/multygame_keras/{0}/role_{1}'.format(name,role))
+    summary_writer.add_graph(session.graph)
+    
+    train_info = (model, train_data, test_data, summary_writer, name, role)
+    model_trainigs.append(train_info)
 
-                train_acc = session.run(accuracy, feed_dict=feed_dict_train)
-                train_loss = session.run(loss, feed_dict=feed_dict_train)
-                test_acc = session.run(accuracy, feed_dict=feed_dict_test)
-                test_loss = session.run(loss, feed_dict=feed_dict_test)
-                #if (test_acc > best):
-                #    saver.save(session, 'C:/tmp/saves/cc6-{0}'.format(i))
-                #    saver.export_meta_graph('C:/tmp/saves/cc6-{0}'.format(i))    
 
-                msg = "{0:>6}: Train Loss {1:>6.4%}  Train Correct {2:>6.1%} | Test Loss {3:>6.4%} Test Correct {4:>6.1%} Role{5}"
-                print(msg.format(i + 1, train_loss, train_acc, test_loss, test_acc,roleIndex))
+while True:
+    for model, train_data, test_data, summary_writer,name,role in model_trainigs:
+        
+        train_input = [x[0] for x in train_data]
+        train_labels = [x[1] for x in train_data]
+        
+        test_input = [x[0] for x in test_data]
+        test_labels = [x[1] for x in test_data]
 
-    end_time = time.time()
-    time_dif = end_time - start_time
-    print("Time usage: " + str(timedelta(seconds=int(round(time_dif)))))
+        print('Fit: {0} role{1}'.format(name,role))
+        model.fit(
+            np.array(train_input),
+            np.array(train_labels),
+            batch_size=64,
+            epochs=10,
+            validation_data=(np.array(test_input),np.array(test_labels)))
 
-summary_writer = tf.summary.FileWriter('/multygame//role1')
-summary_writer.add_graph(session.graph)
 
-#for i in range(10):
-optimize(20000, role_networks, None)
+
+

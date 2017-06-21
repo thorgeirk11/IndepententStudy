@@ -39,22 +39,35 @@ def read_data(file_name, state_size, num_actions, train_data_size):
 with tf.name_scope("input_network"):
     in_con4 = Input(shape=(135,))
     in_cc6 = Input(shape=(253,))
+    in_bt = Input(shape=(130,))
 
     con4 = Dense(150, activation='relu')(in_con4)
     con4 = Dense(75, activation='relu')(con4)
+    
     cc6 = Dense(200, activation='relu')(in_cc6)
     cc6 = Dense(75, activation='relu')(cc6)
 
+    bt = Dense(150, activation='relu')(in_bt)
+    bt = Dense(75, activation='relu')(bt)
+
 with tf.name_scope("middle_network"):
     middle = Sequential([
-        Dense(100, activation='relu', input_shape=(75,)),
+        Dense(200, activation='relu', input_shape=(75,)),
         Dropout(0.5),
-        Dense(100, activation='relu')
+        Dense(200, activation='relu')
     ])
     #middle = Dense(100, activation='relu')
     con4_mid = middle(con4)
     cc6_mid = middle(cc6)
+    bt_mid = middle(bt)
 
+with tf.name_scope("output_network"):
+    bt_role0 = Dense(155, activation='softmax')(bt_mid)
+    bt_role0_model = Model(inputs=in_bt, outputs=bt_role0)
+
+with tf.name_scope("output_network"):
+    bt_role1 = Dense(155, activation='softmax')(bt_mid)
+    bt_role1_model = Model(inputs=in_bt, outputs=bt_role1)
 
 with tf.name_scope("output_network"):
     con4_role0 = Dense(50, activation='relu')(con4_mid)
@@ -100,14 +113,18 @@ with tf.name_scope("output_network"):
 # This creates a model that includes
 # the Input layer and three Dense layers
 models = [
-    (con4_role0_model, in_con4, "connect4", 0, 135, 8),
-    (con4_role1_model, in_con4, "connect4", 1, 135, 8),
-    (cc6_role0_model, in_cc6,  "chinese_checkers_6", 0, 253, 90),
-    (cc6_role1_model, in_cc6,  "chinese_checkers_6", 1, 253, 90),
-    (cc6_role2_model, in_cc6,  "chinese_checkers_6", 2, 253, 90),
-    (cc6_role3_model, in_cc6,  "chinese_checkers_6", 3, 253, 90),
-    (cc6_role4_model, in_cc6,  "chinese_checkers_6", 4, 253, 90),
-    (cc6_role5_model, in_cc6,  "chinese_checkers_6", 5, 253, 90),
+    (bt_role0_model, in_bt, "breakthrough", 0, 130, 155),
+    (bt_role1_model, in_bt, "breakthrough", 1, 130, 155),
+
+    #(con4_role0_model, in_con4, "connect4", 0, 135, 8),
+    #(con4_role1_model, in_con4, "connect4", 1, 135, 8),
+
+    #(cc6_role0_model, in_cc6,  "chinese_checkers_6", 0, 253, 90),
+    #(cc6_role1_model, in_cc6,  "chinese_checkers_6", 1, 253, 90),
+    #(cc6_role2_model, in_cc6,  "chinese_checkers_6", 2, 253, 90),
+    #(cc6_role3_model, in_cc6,  "chinese_checkers_6", 3, 253, 90),
+    #(cc6_role4_model, in_cc6,  "chinese_checkers_6", 4, 253, 90),
+    #(cc6_role5_model, in_cc6,  "chinese_checkers_6", 5, 253, 90),
 ]
 
 # -------------------------------------------------------------------
@@ -146,18 +163,17 @@ for model, input_tensor, name, role, state_size, num_actions in models:
     train_infos.append(train_info)
 
 
-def optimize(train_infos):
+def optimize(train_infos, epochs):
     for model, train_data, test_data, tensorboard_callback in train_infos:
         model.fit(
             np.array(train_data[0]),
             np.array(train_data[1]),
             batch_size=32,
-            epochs=10,
+            epochs=epochs,
             validation_data=(np.array(test_data[0]), np.array(test_data[1])),
             callbacks=[tensorboard_callback]
         )
 
 
 
-optimize(train_infos[1:])
-optimize(train_infos[:1])
+optimize(train_infos,1000)

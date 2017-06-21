@@ -41,109 +41,73 @@ with tf.name_scope("input_network"):
     in_cc6 = Input(shape=(253,))
     in_bt = Input(shape=(130,))
 
-    con4 = Dense(150, activation='relu')(in_con4)
-    con4 = Dense(75, activation='relu')(con4)
+    con4 = Dense(200, activation='relu')(in_con4)
+    #con4 = Dense(75, activation='relu')(con4)
     
     cc6 = Dense(200, activation='relu')(in_cc6)
-    cc6 = Dense(75, activation='relu')(cc6)
+    #cc6 = Dense(75, activation='relu')(cc6)
 
-    bt = Dense(150, activation='relu')(in_bt)
-    bt = Dense(75, activation='relu')(bt)
+    bt = Dense(200, activation='relu')(in_bt)
+    #bt = Dense(75, activation='relu')(bt)
 
 with tf.name_scope("middle_network"):
     middle = Sequential([
-        Dense(200, activation='relu', input_shape=(75,)),
+        Dense(1000, activation='relu', input_shape=(200,)),
         Dropout(0.5),
-        Dense(200, activation='relu')
+        Dense(1000, activation='relu')
     ])
     #middle = Dense(100, activation='relu')
     con4_mid = middle(con4)
     cc6_mid = middle(cc6)
     bt_mid = middle(bt)
 
-with tf.name_scope("output_network"):
-    bt_role0 = Dense(155, activation='softmax')(bt_mid)
-    bt_role0_model = Model(inputs=in_bt, outputs=bt_role0)
-
-with tf.name_scope("output_network"):
-    bt_role1 = Dense(155, activation='softmax')(bt_mid)
-    bt_role1_model = Model(inputs=in_bt, outputs=bt_role1)
-
-with tf.name_scope("output_network"):
-    con4_role0 = Dense(50, activation='relu')(con4_mid)
-    con4_role0 = Dense(8, activation='softmax')(con4_role0)
-    con4_role0_model = Model(inputs=in_con4, outputs=con4_role0)
-
-with tf.name_scope("output_network"):
-    con4_role1 = Dense(50, activation='relu')(con4_mid)
-    con4_role1 = Dense(8, activation='softmax')(con4_role1)
-    con4_role1_model = Model(inputs=in_con4, outputs=con4_role1)
-
-with tf.name_scope("output_network"):
-    #cc6_role0 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role0 = Dense(90, activation='softmax')(cc6_mid)
-    cc6_role0_model = Model(inputs=in_cc6, outputs=cc6_role0)
-
-with tf.name_scope("output_network"):
-    #cc6_role1 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role1 = Dense(90, activation='softmax')(cc6_mid)
-    cc6_role1_model = Model(inputs=in_cc6, outputs=cc6_role1)
-
-with tf.name_scope("output_network"):
-    #cc6_role2 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role2 = Dense(90, activation='softmax')(cc6_mid)
-    cc6_role2_model = Model(inputs=in_cc6, outputs=cc6_role2)
-
-with tf.name_scope("output_network"):
-    #cc6_role3 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role3 = Dense(90, activation='softmax')(cc6_mid)
-    cc6_role3_model = Model(inputs=in_cc6, outputs=cc6_role3)
-
-with tf.name_scope("output_network"):
-    #cc6_role4 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role4 = Dense(90, activation='softmax')(cc6_mid)
-    cc6_role4_model = Model(inputs=in_cc6, outputs=cc6_role4)
-
-with tf.name_scope("output_network"):
-    #cc6_role5 = Dense(100, activation='relu')(cc6_mid)
-    cc6_role5 = Dense(90, activation='softmax')(cc6_mid)
-    cc6_role5_model = Model(inputs=in_cc6, outputs=cc6_role5)
 
 
-# This creates a model that includes
-# the Input layer and three Dense layers
-models = [
-    (bt_role0_model, in_bt, "breakthrough", 0, 130, 155),
-    (bt_role1_model, in_bt, "breakthrough", 1, 130, 155),
+con4_models = []
+for i in range(2):
+    with tf.name_scope("output_network"):
+        out = Dense(50, activation='relu')(con4_mid)
+        out = Dense(8, activation='softmax')(out)
+        model = (Model(inputs=in_con4, outputs=out), "connect4", i)
+        con4_models.append(model)
 
-    #(con4_role0_model, in_con4, "connect4", 0, 135, 8),
-    #(con4_role1_model, in_con4, "connect4", 1, 135, 8),
+cc6_models = []
+for i in range(6):
+    with tf.name_scope("output_network"):
+        out = Dense(200, activation='relu')(cc6_mid)
+        out = Dense(90, activation='softmax')(cc6_mid)
+        model = (Model(inputs=in_cc6, outputs=out), "chinese_checkers_6", i)
+        cc6_models.append(model)
 
-    #(cc6_role0_model, in_cc6,  "chinese_checkers_6", 0, 253, 90),
-    #(cc6_role1_model, in_cc6,  "chinese_checkers_6", 1, 253, 90),
-    #(cc6_role2_model, in_cc6,  "chinese_checkers_6", 2, 253, 90),
-    #(cc6_role3_model, in_cc6,  "chinese_checkers_6", 3, 253, 90),
-    #(cc6_role4_model, in_cc6,  "chinese_checkers_6", 4, 253, 90),
-    #(cc6_role5_model, in_cc6,  "chinese_checkers_6", 5, 253, 90),
-]
+bt_models = []
+for i in range(2):
+    with tf.name_scope("output_network"):
+        out = Dense(200, activation='relu')(bt_mid)
+        out = Dense(155, activation='softmax')(out)
+        model = (Model(inputs=in_bt, outputs=out), "breakthrough", i)
+        bt_models.append(model)
+
+all_game_models = bt_models + con4_models + cc6_models 
 
 # -------------------------------------------------------------------
 #                         Setup Training                             
 # -------------------------------------------------------------------
+
 
 session = tf.Session()
 K.set_session(session)
 session.run(tf.global_variables_initializer())
 
 
-train_infos = []
-for model, input_tensor, name, role, state_size, num_actions in models:
+def setup_training(game_info):
+    model, name, role = game_info
     with tf.name_scope("Optimizer"):
         model.compile(optimizer='adam',
                     loss='mean_squared_error',
                     metrics=['acc'])
-                  
     file_path = "{0}/data/{0}_role{1}.csv".format(name,role)
+    state_size = int(model.input.shape[1])
+    num_actions = int(model.output.shape[1])
     train_data, test_data = read_data(file_path, state_size, num_actions, TRAIN_TEST_RATIO)
     print('{0} | train {1} test {2}'.format(file_path, len(train_data),len(test_data)))
 
@@ -153,27 +117,31 @@ for model, input_tensor, name, role, state_size, num_actions in models:
     train_labels = [x[1] for x in train_data]
     test_input = [x[0] for x in test_data]
     test_labels = [x[1] for x in test_data]
-
-    train_info = (
+    
+    return (
         model, 
         (train_input, train_labels), 
         (test_input, test_labels), 
         tensorboard_callback
     )
-    train_infos.append(train_info)
 
 
-def optimize(train_infos, epochs):
-    for model, train_data, test_data, tensorboard_callback in train_infos:
-        model.fit(
-            np.array(train_data[0]),
-            np.array(train_data[1]),
-            batch_size=32,
-            epochs=epochs,
-            validation_data=(np.array(test_data[0]), np.array(test_data[1])),
-            callbacks=[tensorboard_callback]
-        )
+with tf.name_scope("Train"):
+    def optimize(train_infos, epochs):
+        for model, train_data, test_data, tensorboard_callback in train_infos:
+            model.fit(
+                np.array(train_data[0]),
+                np.array(train_data[1]),
+                batch_size=32,
+                epochs=epochs,
+                validation_data=(np.array(test_data[0]), np.array(test_data[1])),
+                callbacks=[tensorboard_callback]
+            )
 
+    bt_training =   [setup_training(x) for x in bt_models]
+    con4_training = [setup_training(x) for x in con4_models]
+    cc6_training =    [setup_training(x) for x in cc6_models]
 
-
-optimize(train_infos,1000)
+    optimize(bt_training, 5)
+    optimize(con4_training, 5)
+    optimize(cc6_training, 5)

@@ -75,7 +75,7 @@ cc6_models = []
 for i in range(6):
     with tf.name_scope("output_network"):
         out = Dense(200, activation='relu')(cc6_mid)
-        out = Dense(90, activation='softmax')(cc6_mid)
+        out = Dense(90, activation='softmax')(out)
         model = (Model(inputs=in_cc6, outputs=out), "chinese_checkers_6", i)
         cc6_models.append(model)
 
@@ -111,7 +111,6 @@ def setup_training(game_info):
     train_data, test_data = read_data(file_path, state_size, num_actions, TRAIN_TEST_RATIO)
     print('{0} | train {1} test {2}'.format(file_path, len(train_data),len(test_data)))
 
-    tensorboard_callback = TensorBoard(log_dir='/multygame_keras/{0}/role_{1}'.format(name,role))
 
     train_input = [x[0] for x in train_data]
     train_labels = [x[1] for x in train_data]
@@ -122,26 +121,38 @@ def setup_training(game_info):
         model, 
         (train_input, train_labels), 
         (test_input, test_labels), 
-        tensorboard_callback
+        '/multygame_keras/{0}/role_{1}'.format(name,role)
     )
 
 
 with tf.name_scope("Train"):
-    def optimize(train_infos, epochs):
-        for model, train_data, test_data, tensorboard_callback in train_infos:
+    def optimize(train_infos, epochs, use_tensorboard, pretrained):
+        for model, train_data, test_data, log_dir in train_infos:
+            
+            callbacks = []
+            if use_tensorboard:
+                callbacks.append(
+                    TensorBoard(
+                        log_dir= log_dir + ('_pretrained' if pretrained else ''),
+                        histogram_freq=5,
+                        write_grads=True
+                    )
+                )
+
             model.fit(
                 np.array(train_data[0]),
                 np.array(train_data[1]),
                 batch_size=32,
                 epochs=epochs,
                 validation_data=(np.array(test_data[0]), np.array(test_data[1])),
-                callbacks=[tensorboard_callback]
+                callbacks=callbacks
             )
 
     bt_training =   [setup_training(x) for x in bt_models]
-    con4_training = [setup_training(x) for x in con4_models]
+    con4_training = [setup_training(x,) for x in con4_models]
     cc6_training =    [setup_training(x) for x in cc6_models]
 
-    optimize(bt_training, 5)
-    optimize(con4_training, 5)
-    optimize(cc6_training, 5)
+    for i in range(5):
+        optimize(cc6_training[1:], 5, False, False)
+    
+    optimize(cc6_training[:1], 15, True, True)

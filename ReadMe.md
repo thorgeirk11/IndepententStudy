@@ -60,13 +60,18 @@ Connect4 was the first game I converted and trained on, thses are the mistakes t
     Another way is to messure how often the network prediced the correct label. The only problem with this approch is that if for example two actions are equaly likly on a given state then the network will only achive 50% accuracy on that state.
 
 - Split up the roles. 
-    That is do not train on the model on both roles with out separation, since the stratigy for each role is diffrent and the network will get confused.
+    That is do not train on the model on both roles with out separation, since the stratigy for each role is diffrent and the network could get confused.
 
 # Initial desgin
 
-As described in the problems describition, the task is to desgin a ANN that can train on multiple games where the middle part of the network trains on every game and the input and output layers get changed.
+As described in the problems describition, the task is to desgin a ANN that can train on multiple games where the middle part of the network trains on every game and the input and output layers get changed. 
 
-To start off I focused on a single game and tryed out many diffrent variations for networks. I used only fully connected layers in the network 
+All the games described in GDL are markov decision processes, meaning that at each state of the game it dose not matter how you ended up in that state, the current state only matters (https://en.wikipedia.org/wiki/Markov_property). Therefore I descided not to invest in research into LSTMs or RNNs for this problem, however it would be interesting to see if training an LSTM on these games would improved the accuracy since it would learn the play style of the agents.
+
+I desgined the system to use fully connceted layers and experimented with many hyper paramiters.
+
+To start off a single game was used and  tryed out many diffrent variations for networks. 
+
 
 ```py
 state_size = 135
@@ -96,6 +101,10 @@ optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(loss)
 ```
 
 This is the initial setup of the network, 
+
+
+
+
 
 
 # Initial results 

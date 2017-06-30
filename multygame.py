@@ -10,27 +10,27 @@ from keras.callbacks import TensorBoard
 from keras.layers import Input, Dense, Dropout
 from keras.models import Model, Sequential
 from keras import backend as K
+import os
 
-TRAIN_TEST_RATIO = 0.8 # Splits the training and test data 80/20.
+VALIDATION_SPLIT = 0.8 # Splits the training and  data 20/80.
 metadata_size = 4 
 
+dir_path = os.getcwd()
 
 # -------------------------------------------------------------------
 #                           Read Data
 # -------------------------------------------------------------------
 
-def read_data(file_name, state_size, num_actions, train_data_size):
+def read_data(file_name, state_size, num_actions):
     meta = pd.read_csv(file_name, usecols = range(0,metadata_size), header = None)
     features = pd.read_csv(file_name, usecols = range(metadata_size, metadata_size + state_size), header = None)
-    labels  = pd.read_csv(file_name, usecols = range(metadata_size + state_size, metadata_size + state_size + num_actions), header = None)
+    labels = pd.read_csv(file_name, usecols = range(metadata_size + state_size, metadata_size + state_size + num_actions), header = None)
     
     data = list(zip(meta.values, features.values, labels.values))
     data = [(item[1],item[2]) for item in data if item[0][3] != 0]
-
-    cut = int(len(data) * train_data_size)
-    train_data = data[:cut]
-    test_data =  data[cut:]
-    return train_data, test_data
+    inputs = [x[0] for x in data]
+    labels = [x[1] for x in data]
+    return inputs, labels
 
 # -------------------------------------------------------------------
 #                           Create Model                             
@@ -98,6 +98,9 @@ session = tf.Session()
 K.set_session(session)
 session.run(tf.global_variables_initializer())
 
+def reset_training(game_info):
+    model, name, role = game_info
+    model.load_weights('{0}/{1}/saved_weights/init/role_{2}.h5'.format(dir_path, name, role))
 
 def setup_training(game_info):
     model, name, role = game_info
@@ -105,29 +108,26 @@ def setup_training(game_info):
         model.compile(optimizer='adam',
                     loss='mean_squared_error',
                     metrics=['acc'])
+        # Save Initial weights
+        model.save_weights('{0}/{1}/saved_weights/init/role_{2}.h5'.format(dir_path, name, role))
+
     file_path = "{0}/data/{0}_role{1}.csv".format(name,role)
     state_size = int(model.input.shape[1])
     num_actions = int(model.output.shape[1])
-    train_data, test_data = read_data(file_path, state_size, num_actions, TRAIN_TEST_RATIO)
-    print('{0} | train {1} test {2}'.format(file_path, len(train_data),len(test_data)))
+    inputs, labels = read_data(file_path, state_size, num_actions)
+    print('{0} | data {1}'.format(file_path, len(inputs)))
 
-
-    train_input = [x[0] for x in train_data]
-    train_labels = [x[1] for x in train_data]
-    test_input = [x[0] for x in test_data]
-    test_labels = [x[1] for x in test_data]
-    
     return (
         model, 
-        (train_input, train_labels), 
-        (test_input, test_labels), 
-        '/multygame_keras/{0}/role_{1}'.format(name,role)
+        inputs, 
+        labels, 
+        '{0}/multygame_keras/{1}/role_{2}'.format(dir_path, name, role)
     )
 
 
 with tf.name_scope("Train"):
-    def optimize(train_infos, epochs, use_tensorboard, pretrained):
-        for model, train_data, test_data, log_dir in train_infos:
+    def optimize(train_infos, epochs, use_tensorboard, pretrained, validation_split):
+        for model, inputs, labels, log_dir in train_infos:
             
             callbacks = []
             if use_tensorboard:
@@ -140,19 +140,26 @@ with tf.name_scope("Train"):
                 )
 
             model.fit(
-                np.array(train_data[0]),
-                np.array(train_data[1]),
+                np.array(inputs),
+                np.array(labels),
                 batch_size=32,
                 epochs=epochs,
-                validation_data=(np.array(test_data[0]), np.array(test_data[1])),
+                validation_split=validation_split,
                 callbacks=callbacks
             )
 
     bt_training =   [setup_training(x) for x in bt_models]
-    con4_training = [setup_training(x,) for x in con4_models]
-    cc6_training =    [setup_training(x) for x in cc6_models]
+    con4_training = [setup_training(x) for x in con4_models]
+    cc6_training =  [setup_training(x) for x in cc6_models]
 
-    for i in range(5):
-        optimize(cc6_training[1:], 5, False, False)
-    
-    optimize(cc6_training[:1], 15, True, True)
+
+for i in range(5):
+    optimize(cc6_training[1:], 5, False, False, 0)
+
+optimize(cc6_training[:1], 15, True, True, 0.3)
+
+# Reset the weights
+for model_info in cc6_models:
+    reset_training(model_info)
+
+optimize(cc6_training[:1], 15, True, False, 0.3)

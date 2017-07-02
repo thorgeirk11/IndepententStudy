@@ -10,10 +10,12 @@ from keras.callbacks import TensorBoard
 from keras.layers import Input, Dense, Dropout
 from keras.models import Model, Sequential
 from keras import backend as K
+from multy_gpu import make_parallel
 import os
 
 VALIDATION_SPLIT = 0.8 # Splits the training and  data 20/80.
 metadata_size = 4 
+GPU_COUNT = 1
 
 dir_path = os.getcwd()
 
@@ -52,9 +54,9 @@ with tf.name_scope("input_network"):
 
 with tf.name_scope("middle_network"):
     middle = Sequential([
-        Dense(1000, activation='relu', input_shape=(200,)),
+        Dense(500, activation='relu', input_shape=(200,)),
         Dropout(0.5),
-        Dense(1000, activation='relu')
+        Dense(500, activation='relu')
     ])
     #middle = Dense(100, activation='relu')
     con4_mid = middle(con4)
@@ -105,6 +107,8 @@ def reset_training(game_info):
 def setup_training(game_info):
     model, name, role = game_info
     with tf.name_scope("Optimizer"):
+        if GPU_COUNT > 1:
+            make_parallel(model, GPU_COUNT)
         model.compile(optimizer='adam',
                     loss='mean_squared_error',
                     metrics=['acc'])
@@ -142,7 +146,7 @@ with tf.name_scope("Train"):
             model.fit(
                 np.array(inputs),
                 np.array(labels),
-                batch_size=32,
+                batch_size=32 * GPU_COUNT,
                 epochs=epochs,
                 validation_split=validation_split,
                 callbacks=callbacks

@@ -121,8 +121,8 @@ def setup_training(game_info):
         model.save_weights('{0}/{1}/saved_weights/init/role_{2}.h5'.format(dir_path, name, role))
 
     file_path = "{0}/data/{0}_role{1}.csv".format(name,role)
-    state_size = int(model.input.shape[1])
-    num_actions = int(model.output.shape[1])
+    state_size = int(model.get_input_shape_at(0)[1])
+    num_actions = int(model.get_output_shape_at(0)[1])
     inputs, labels = read_data(file_path, state_size, num_actions)
     print('{0} | data {1}'.format(file_path, len(inputs)))
 

@@ -111,9 +111,9 @@ correct_prediction = tf.equal(y_pred_cls, y_true_cls)
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(loss)
 ```
-Snap shot from tensorboard of the model:
+Snapshot from tensorboard of the model:
 
-<img src="https://raw.githubusercontent.com/thorgeirk11/IndepententStudy/master/single_role.png" width="400">
+<img src="https://raw.githubusercontent.com/thorgeirk11/IndepententStudy/master/screenshots/single_role.png" width="400">
 
 ## Multiple role model
 Here the model was expanded to allow for multiple output while only taking a single input. The state representation did not between roles only the output space.
@@ -124,11 +124,9 @@ with tf.name_scope("input_network"):
     con4 = Dense(200, activation='relu')(in_con4)
 
 with tf.name_scope("middle_network"):
-    mid = Dense(500, activation='relu', input_shape=(200,))(con4)
+    mid = Dense(500, activation='relu')(con4)
     mid = Dropout(0.5)(mid)
     mid = Dense(500, activation='relu')(mid)
-
-with tf.name_scope("output_network"):
 
 models = []
 for i in range(2):
@@ -139,6 +137,10 @@ for i in range(2):
 
 # model = [role0, role1]
 ```
+Snapshot from tensorboard of the model:
+
+<img src="https://raw.githubusercontent.com/thorgeirk11/IndepententStudy/master/screenshots/multiple_roles_expanded.png" width="400">
+
 
 ## Multiple game model
 

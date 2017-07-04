@@ -7,11 +7,11 @@ import pandas as pd
 import random
 
 from tensorflow.python.client import device_lib
-from keras.callbacks import TensorBoard
+from keras.callbacks import TensorBoard, ReduceLROnPlateau
 from keras.layers import Input, Dense, Dropout
 from keras.models import Model, Sequential
 from keras import backend as K
-from multy_gpu import make_parallel
+from gpu_utils import make_parallel
 import os
 
 #def get_available_gpus():
@@ -43,13 +43,16 @@ def read_data(file_name, state_size, num_actions):
 #                           Create Model                             
 # -------------------------------------------------------------------
 
-with tf.name_scope("input_network"):
+with tf.name_scope("input_network_connect4"):
     in_con4 = Input(shape=(135,))
-    in_cc6 = Input(shape=(253,))
-    in_bt = Input(shape=(130,))
-
     con4 = Dense(200, activation='relu')(in_con4)
-    cc6 = Dense(200, activation='relu')(in_cc6)
+    
+#with tf.name_scope("input_network_chinses_checkers_6"):
+#    in_cc6 = Input(shape=(253,))
+#    cc6 = Dense(200, activation='relu')(in_cc6)
+
+with tf.name_scope("input_network_breakthrough"):
+    in_bt = Input(shape=(130,))
     bt = Dense(200, activation='relu')(in_bt)
 
 with tf.name_scope("middle_network"):
@@ -59,7 +62,7 @@ with tf.name_scope("middle_network"):
         Dense(500, activation='relu')
     ])
     con4_mid = middle(con4)
-    cc6_mid = middle(cc6)
+    #cc6_mid = middle(cc6)
     bt_mid = middle(bt)
 
 con4_models = []
@@ -71,12 +74,12 @@ for i in range(2):
         con4_models.append(model)
 
 cc6_models = []
-for i in range(6):
-    with tf.name_scope("output_network"):
-        out = Dense(200, activation='relu')(cc6_mid)
-        out = Dense(90, activation='softmax')(out)
-        model = (Model(inputs=in_cc6, outputs=out), "chinese_checkers_6", i)
-        cc6_models.append(model)
+#for i in range(6):
+#    with tf.name_scope("output_network"):
+#        out = Dense(200, activation='relu')(cc6_mid)
+#        out = Dense(90, activation='softmax')(out)
+#        model = (Model(inputs=in_cc6, outputs=out), "chinese_checkers_6", i)
+#        cc6_models.append(model)
 
 bt_models = []
 for i in range(2):
@@ -127,14 +130,14 @@ def setup_training(game_info):
 
 
 with tf.name_scope("Train"):
-    def optimize(train_infos, epochs, use_tensorboard, pretrained, validation_split):
+    def optimize(train_infos, epochs, use_tensorboard, pretrained, validation_split, itteration):
         for model, inputs, labels, log_dir in train_infos:
             
-            callbacks = []
+            callbacks = [ReduceLROnPlateau(verbose=1)]
             if use_tensorboard:
                 callbacks.append(
                     TensorBoard(
-                        log_dir= log_dir + ('_pretrained' if pretrained else ''),
+                        log_dir= log_dir + ('_pretrained' if pretrained else '') + '_' + str(itteration),
                         histogram_freq=5,
                         write_grads=True
                     )
@@ -146,21 +149,21 @@ with tf.name_scope("Train"):
                 batch_size=32 * GPU_COUNT,
                 epochs=epochs,
                 validation_split=validation_split,
-                callbacks=callbacks
+                callbacks=callbacks,
+                verbose=1
             )
 
-    #bt_training =   [setup_training(x) for x in bt_models]
+    bt_training =   [setup_training(x) for x in bt_models]
     con4_training = [setup_training(x) for x in con4_models]
     #cc6_training =  [setup_training(x) for x in cc6_models]
 
 
-    for i in range(5):
-        optimize(con4_training[1:], 5, False, False, 0)
+    for i in range(3):
+        optimize(con4_training[:1], 15, True, False, 0.4, i)
 
-    optimize(con4_training[:1], 15, True, True, 0.3)
+        # Reset the weights
+        for model_info in con4_models:
+            reset_training(model_info)
 
-    # Reset the weights
-    for model_info in con4_models:
-        reset_training(model_info)
-
-    optimize(con4_training[:1], 15, True, False, 0.3)
+        optimize(con4_training[1:], 25, False, False, 0, i)
+        optimize(con4_training[:1], 15, True, True, 0.4, i)

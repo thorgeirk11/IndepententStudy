@@ -19,11 +19,11 @@ A considerable part of the project is to figure out a good structure for the net
 # Tutorial and Supporting materials
 
 Here is a list of tutorials which I found really useful:
+- Keras is just magic, This will save you ton of time: https://keras.io/getting-started/faq/
 - These tutorials will walk you through the basics of tensorflow:
   Youtube channel: https://www.youtube.com/watch?v=wuo4JdG3SvU&list=PL9Hr9sNUjfsmEu1ZniY0XpHSzl5uihcXZ
   Git repo with code: https://github.com/Hvass-Labs/TensorFlow-Tutorials/
 - Tenorboard is fantastic in visualizing model and the accuracy: https://www.tensorflow.org/get_started/summaries_and_tensorboard
-- For saving and restoring subgraphs: https://blog.metaflow.fr/tensorflow-saving-restoring-and-mixing-multiple-models-c4c94d5d7125
 
 # Games and Data
 The selection of the games depended on how much data was behind each game and the developers familiarty of the games. Connect4, chinese checkers 6 player and breakthroguh were select.
@@ -63,9 +63,9 @@ Connect four is a two player turn taking game that is the simplest game that was
 ### State
 
 The state for connect four is represented with 135 bits, the board is 7x7 and each cell can be red, blue or blank and there are two more bits for marking hows turns it is. Sample state:
-```
-((CELL 1 1 W) (CELL 1 0 DIRT) (CELL 2 0 DIRT) (CELL 3 0 DIRT) (CELL 4 0 DIRT) (CELL 5 0 DIRT) (CELL 6 0 DIRT) (CELL 7 0 DIRT) (CELL 2 1 B) (CELL 2 2 B) (CELL 2 3 B) (CELL 2 4 B) (CELL 2 5 B) (CELL 2 6 B) (CELL 3 1 B) (CELL 3 2 B) (CELL 3 3 B) (CELL 3 4 B) (CELL 3 5 B) (CELL 3 6 B) (CELL 4 1 B) (CELL 4 2 B) (CELL 4 3 B) (CELL 4 4 B) (CELL 4 5 B) (CELL 4 6 B) (CELL 5 1 B) (CELL 5 2 B) (CELL 5 3 B) (CELL 5 4 B) (CELL 5 5 B) (CELL 5 6 B) (CELL 6 1 B) (CELL 6 2 B) (CELL 6 3 B) (CELL 6 4 B) (CELL 6 5 B) (CELL 6 6 B) (CELL 7 1 B) (CELL 7 2 B) (CELL 7 3 B) (CELL 7 4 B) (CELL 7 5 B) (CELL 7 6 B) (CELL 1 2 B) (CELL 1 3 B) (CELL 1 4 B) (CELL 1 5 B) (CELL 1 6 B) (CONTROL RED) )
-```
+
+> ((CELL 1 1 W) (CELL 1 0 DIRT) (CELL 2 0 DIRT) (CELL 3 0 DIRT) (CELL 4 0 DIRT) (CELL 5 0 DIRT) (CELL 6 0 DIRT) (CELL 7 0 DIRT) (CELL 2 1 B) (CELL 2 2 B) (CELL 2 3 B) (CELL 2 4 B) (CELL 2 5 B) (CELL 2 6 B) (CELL 3 1 B) (CELL 3 2 B) (CELL 3 3 B) (CELL 3 4 B) (CELL 3 5 B) (CELL 3 6 B) (CELL 4 1 B) (CELL 4 2 B) (CELL 4 3 B) (CELL 4 4 B) (CELL 4 5 B) (CELL 4 6 B) (CELL 5 1 B) (CELL 5 2 B) (CELL 5 3 B) (CELL 5 4 B) (CELL 5 5 B) (CELL 5 6 B) (CELL 6 1 B) (CELL 6 2 B) (CELL 6 3 B) (CELL 6 4 B) (CELL 6 5 B) (CELL 6 6 B) (CELL 7 1 B) (CELL 7 2 B) (CELL 7 3 B) (CELL 7 4 B) (CELL 7 5 B) (CELL 7 6 B) (CELL 1 2 B) (CELL 1 3 B) (CELL 1 4 B) (CELL 1 5 B) (CELL 1 6 B) (CONTROL RED) )
+
 
 ### Action
 The number of actions is seven, one for each pillar which the tokens be dropped. 
@@ -75,16 +75,18 @@ Chinese checkers is a startegy board game where up to 6 players compete, see htt
 
 <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/ChineseCheckersboard.jpeg" alt="Chinese checkers" width="320">
 
-### State
 The six player version of chinese checkers was used and the state is represented with 253 bits. This is much more complex than connect four, see sample state:
 
-```
-((STEP 14) (CELL C4 RED) (CELL B1 BLANK) (CELL E4 MAGENTA) (CELL C2 BLANK) (CELL F2 BLUE) (CELL F1 BLANK) (CELL F3 TEAL) (CELL H2 BLANK) (CELL F5 GREEN) (CELL F6 BLANK) (CELL C5 YELLOW) (CELL C6 BLANK) (CELL D4 RED) (CELL E1 MAGENTA) (CELL C1 BLANK) (CELL G5 BLUE) (CELL G1 BLANK) (CELL G4 TEAL) (CELL H1 BLANK) (CELL E5 GREEN) (CELL G7 BLANK) (CELL C3 YELLOW) (CELL C7 BLANK) (CELL B2 BLANK) (CELL A1 RED) (CELL D1 MAGENTA) (CELL D2 BLANK) (CELL D3 BLANK) (CELL D5 BLANK) (CELL D6 YELLOW) (CELL E2 BLANK) (CELL E3 BLANK) (CELL F4 BLANK) (CELL G2 BLUE) (CELL G3 BLANK) (CELL G6 GREEN) (CELL I1 TEAL) (CONTROL YELLOW) )
-```
-
-### Action
+> ((STEP 14) (CELL C4 RED) (CELL B1 BLANK) (CELL E4 MAGENTA) (CELL C2 BLANK) (CELL F2 BLUE) (CELL F1 BLANK) (CELL F3 TEAL) (CELL H2 BLANK) (CELL F5 GREEN) (CELL F6 BLANK) (CELL C5 YELLOW) (CELL C6 BLANK) (CELL D4 RED) (CELL E1 MAGENTA) (CELL C1 BLANK) (CELL G5 BLUE) (CELL G1 BLANK) (CELL G4 TEAL) (CELL H1 BLANK) (CELL E5 GREEN) (CELL G7 BLANK) (CELL C3 YELLOW) (CELL C7 BLANK) (CELL B2 BLANK) (CELL A1 RED) (CELL D1 MAGENTA) (CELL D2 BLANK) (CELL D3 BLANK) (CELL D5 BLANK) (CELL D6 YELLOW) (CELL E2 BLANK) (CELL E3 BLANK) (CELL F4 BLANK) (CELL G2 BLUE) (CELL G3 BLANK) (CELL G6 GREEN) (CELL I1 TEAL) (CONTROL YELLOW) )
 
 There are in total 390 actions that can be performed in this game however each role can only perform 90 of them. E.g role1 is the only role able to perform (MOVE A1 B1). However only a few are leagal actions in any given state. 
+
+## Breakthrough
+
+Breakthrough is a two player turn taking game, basicly chess with only pawns , see https://en.wikipedia.org/wiki/Breakthrough_(board_game). 
+
+<img src="https://raw.githubusercontent.com/thorgeirk11/IndepententStudy/master/screenshots/breakthrough_wikipedia.png" alt="Chinese checkers" width="320">
+
 
 # Training data
 The states for the games are extracted from the database using the Parse.sql file located under the sql folder for each game. The Parse.sql file selects the states and the actions performed on that state for each role in the given game. It outputs a .csv file that contains the state and actions.

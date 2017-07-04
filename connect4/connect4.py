@@ -39,7 +39,7 @@ def read_data(file_name, train_data_size, fun):
   
 def filterData(record):
     meta, _, _ = record
-    return meta[2] == 0 and meta[3] > 0
+    return meta[2] == 0 and meta[3] != 0
 
 def read_from_csv(batch_size):
     features = []
@@ -51,7 +51,7 @@ def read_from_csv(batch_size):
     return features, labels
 
 # Splits the training and test data 80/20.
-train_data, test_data = read_data('data/connect4_big_without_NoOp.csv', 0.8, filterData)
+train_data, test_data = read_data('data/connect4_role0.csv', 0.8, filterData)
 
 # -------------------------------------------------------------------
 #                           Create Model
@@ -84,7 +84,6 @@ def fully_connected_network(layers, learning_rate):
         with tf.name_scope("train"):
             optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
-
         return optimizer, accuracy
 
     
@@ -100,9 +99,9 @@ session = tf.Session()
 session.run(tf.global_variables_initializer())
 
 
-#merged_summary = tf.summary.merge_all()
-#file_writer = tf.summary.FileWriter('/logs/5')
-#file_writer.add_graph(session.graph)
+merged_summary = tf.summary.merge_all()
+file_writer = tf.summary.FileWriter('/con4')
+file_writer.add_graph(session.graph)
 
 train_batch_size = 64
 
@@ -123,8 +122,8 @@ def optimize(num_iterations):
         session.run(optimizer, feed_dict=feed_dict_train)
 
         if i % 10 == 0:
-            #s = session.run(merged_summary, feed_dict=feed_dict_test)
-            #file_writer.add_summary(s,i)
+            s = session.run(merged_summary, feed_dict=feed_dict_test)
+            file_writer.add_summary(s,i)
             train_acc = session.run(accuracy, feed_dict=feed_dict_train)
             test_acc = session.run(accuracy, feed_dict=feed_dict_test)
             if (test_acc > best):

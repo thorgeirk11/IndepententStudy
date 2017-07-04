@@ -49,13 +49,8 @@ with tf.name_scope("input_network"):
     in_bt = Input(shape=(130,))
 
     con4 = Dense(200, activation='relu')(in_con4)
-    #con4 = Dense(75, activation='relu')(con4)
-    
     cc6 = Dense(200, activation='relu')(in_cc6)
-    #cc6 = Dense(75, activation='relu')(cc6)
-
     bt = Dense(200, activation='relu')(in_bt)
-    #bt = Dense(75, activation='relu')(bt)
 
 with tf.name_scope("middle_network"):
     middle = Sequential([
@@ -63,12 +58,9 @@ with tf.name_scope("middle_network"):
         Dropout(0.5),
         Dense(500, activation='relu')
     ])
-    #middle = Dense(100, activation='relu')
     con4_mid = middle(con4)
     cc6_mid = middle(cc6)
     bt_mid = middle(bt)
-
-
 
 con4_models = []
 for i in range(2):

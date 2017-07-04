@@ -135,7 +135,7 @@ for i in range(2):
         out = Dense(8, activation='softmax')(out) 
         models.append(Model(inputs=in_con4, outputs=out))
 
-# model = [role0, role1]
+# models = [role0, role1]
 ```
 Snapshot from tensorboard of the model:
 
@@ -192,5 +192,5 @@ for i in range(2):
 ```
 
 Here is a diagram of the model compiled with only connect4 and breakthrough, note that there are two inputs one for each game and four outputs one for each role for both games.
-<img src="https://raw.githubusercontent.com/thorgeirk11/IndepententStudy/master/screenshots/Connect4_and_breakthrough.png" width="400">
 
+![Model with connect4 and breakthrough](https://raw.githubusercontent.com/thorgeirk11/IndepententStudy/master/screenshots/Connect4_and_breakthrough.png)

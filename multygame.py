@@ -43,47 +43,47 @@ def read_data(file_name, state_size, num_actions):
 #                           Create Model                             
 # -------------------------------------------------------------------
 
-with tf.name_scope("input_network_connect4"):
+with tf.name_scope("input_connect4"):
     in_con4 = Input(shape=(135,))
     con4 = Dense(200, activation='relu')(in_con4)
-    
-#with tf.name_scope("input_network_chinses_checkers_6"):
-#    in_cc6 = Input(shape=(253,))
-#    cc6 = Dense(200, activation='relu')(in_cc6)
 
-with tf.name_scope("input_network_breakthrough"):
+with tf.name_scope("input_network_chinses_checkers_6"):
+    in_cc6 = Input(shape=(253,))
+    cc6 = Dense(200, activation='relu')(in_cc6)
+
+with tf.name_scope("input_breakthrough"):
     in_bt = Input(shape=(130,))
     bt = Dense(200, activation='relu')(in_bt)
 
-with tf.name_scope("middle_network"):
+with tf.name_scope("middle_layers"):
     middle = Sequential([
         Dense(500, activation='relu', input_shape=(200,)),
         Dropout(0.5),
         Dense(500, activation='relu')
     ])
     con4_mid = middle(con4)
-    #cc6_mid = middle(cc6)
+    cc6_mid = middle(cc6)
     bt_mid = middle(bt)
 
 con4_models = []
 for i in range(2):
-    with tf.name_scope("output_network"):
+    with tf.name_scope("output_conncet4_role{0}".format(i)):
         out = Dense(50, activation='relu')(con4_mid)
         out = Dense(8, activation='softmax')(out)
         model = (Model(inputs=in_con4, outputs=out), "connect4", i)
         con4_models.append(model)
 
 cc6_models = []
-#for i in range(6):
-#    with tf.name_scope("output_network"):
-#        out = Dense(200, activation='relu')(cc6_mid)
-#        out = Dense(90, activation='softmax')(out)
-#        model = (Model(inputs=in_cc6, outputs=out), "chinese_checkers_6", i)
-#        cc6_models.append(model)
+for i in range(6):
+    with tf.name_scope("output_chinese_checkers_role{0}".format(i)):
+        out = Dense(200, activation='relu')(cc6_mid)
+        out = Dense(90, activation='softmax')(out)
+        model = (Model(inputs=in_cc6, outputs=out), "chinese_checkers_6", i)
+        cc6_models.append(model)
 
 bt_models = []
 for i in range(2):
-    with tf.name_scope("output_network"):
+    with tf.name_scope("output_breakthrough_role{0}".format(i)):
         out = Dense(200, activation='relu')(bt_mid)
         out = Dense(155, activation='softmax')(out)
         model = (Model(inputs=in_bt, outputs=out), "breakthrough", i)

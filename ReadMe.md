@@ -90,14 +90,14 @@ state_size = 135
 num_actions = 8
 
 # Input into the network, the state
-input_state = tf.placeholder(tf.float32, shape=[None, state_size], name='input_state')
+x = tf.placeholder(tf.float32, shape=[None, state_size], name='x')
 # The actual action performed in the state (label)
-y_true = tf.placeholder(tf.float32, shape=[None, num_actions], name='label')
+y_true = tf.placeholder(tf.float32, shape=[None, num_actions], name='y_true')
 y_true_cls = tf.argmax(y_true, dimension=1)
 
-input_state_pretty = pt.wrap(input_state)
+x_pretty = pt.wrap(x)
 with pt.defaults_scope(activation_fn=tf.nn.relu):
-    pred_action, _ = input_state_pretty.\
+    pred_action, _ = x_pretty.\
         fully_connected(size=128, name='layer_fc2').\
         fully_connected(size=64,  name='layer_fc3').\
         fully_connected(size=128, name='layer_fc4').\

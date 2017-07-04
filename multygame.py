@@ -14,13 +14,13 @@ from keras import backend as K
 from multy_gpu import make_parallel
 import os
 
-def get_available_gpus():
-    local_device_protos = device_lib.list_local_devices()
-    return [x.name for x in local_device_protos if x.device_type == 'GPU']
+#def get_available_gpus():
+#    local_device_protos = device_lib.list_local_devices()
+#    return [x.name for x in local_device_protos if x.device_type == 'GPU']
 
 VALIDATION_SPLIT = 0.8 # Splits the training and  data 20/80.
 metadata_size = 4 
-GPU_COUNT = len(get_available_gpus())
+GPU_COUNT = 1 #len(get_available_gpus())
 
 dir_path = os.getcwd()
 
@@ -104,8 +104,8 @@ def reset_training(game_info):
 def setup_training(game_info):
     model, name, role = game_info
     with tf.name_scope("Optimizer"):
-        if GPU_COUNT > 1:
-            make_parallel(model, GPU_COUNT)
+        #if GPU_COUNT > 1:
+        #    make_parallel(model, GPU_COUNT)
         model.compile(optimizer='adam',
                     loss='mean_squared_error',
                     metrics=['acc'])
@@ -149,18 +149,18 @@ with tf.name_scope("Train"):
                 callbacks=callbacks
             )
 
-    bt_training =   [setup_training(x) for x in bt_models]
+    #bt_training =   [setup_training(x) for x in bt_models]
     con4_training = [setup_training(x) for x in con4_models]
-    cc6_training =  [setup_training(x) for x in cc6_models]
+    #cc6_training =  [setup_training(x) for x in cc6_models]
 
 
-for i in range(5):
-    optimize(cc6_training[1:], 5, False, False, 0)
+    for i in range(5):
+        optimize(con4_training[1:], 5, False, False, 0)
 
-optimize(cc6_training[:1], 15, True, True, 0.3)
+    optimize(con4_training[:1], 15, True, True, 0.3)
 
-# Reset the weights
-for model_info in cc6_models:
-    reset_training(model_info)
+    # Reset the weights
+    for model_info in con4_models:
+        reset_training(model_info)
 
-optimize(cc6_training[:1], 15, True, False, 0.3)
+    optimize(con4_training[:1], 15, True, False, 0.3)

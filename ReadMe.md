@@ -112,7 +112,8 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(loss)
 ```
 Snap shot from tensorboard of the model:
-![alt text](https://raw.githubusercontent.com/thorgeirk11/IndepententStudy/master/single_role.png)
+
+<img src="https://raw.githubusercontent.com/thorgeirk11/IndepententStudy/master/single_role.png" width="400">
 
 ## Multiple role model
 Here the model was expanded to allow for multiple output while only taking a single input. The state representation did not between roles only the output space.

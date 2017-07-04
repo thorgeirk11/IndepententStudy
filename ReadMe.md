@@ -25,16 +25,68 @@ Here is a list of tutorials which I found really useful:
 - Tenorboard is fantastic in visualizing model and the accuracy: https://www.tensorflow.org/get_started/summaries_and_tensorboard
 - For saving and restoring subgraphs: https://blog.metaflow.fr/tensorflow-saving-restoring-and-mixing-multiple-models-c4c94d5d7125
 
-# Games selected
+# Games and Data
+The selection of the games depended on how much data was behind each game and the developers familiarty of the games. Connect4, chinese checkers 6 player and breakthroguh were select.
+
+The data is from a mysql database [Citation Needed] containg thounds of matches on many diffrent games. Here is the sql code used to find the games with the most data. 
+```sql
+select g.name, count(m.match_id) MatchCount, sum(temp.step) as StepCount,  Max(temp.roleindex) from games g
+inner join matches m on m.game = g.name
+inner join 
+    (
+        select match_id, max(step_number) as step, max(roleindex) as roleindex
+        from moves 
+        group by match_id
+    ) temp on temp.match_id = m.match_id
+where m.match_id not in (select match_id from errormessages)
+group by g.name
+order by StepCount desc
+```  
+Output:
+```
+   Game Name                       Match Count     Step Count      Num Roles
+1  breakthrough                    2786            138626          1
+2  connect4                        2355            47266           1
+3  numbertictactoe                 1630            11956           1
+4  tictactoe                       1405            10350           1
+5  tictactoe_3d_small_6player      1291            33204           5
+6  tictactoe_3d_6player            1276            74760           5
+7  chinesecheckers6                1268            72210           5
+8  chinesecheckers6-simultaneous   1174            20007           5
+```
 
 ## Connect4 
-Connect four is a two player turn taking game that is the simplest game that was examined. See https://en.wikipedia.org/wiki/Connect_Four
+Connect four is a two player turn taking game that is the simplest game that was examined, see https://en.wikipedia.org/wiki/Connect_Four
 
-![](https://upload.wikimedia.org/wikipedia/commons/a/ad/Connect_Four.gif)
+![Connect four gif](https://upload.wikimedia.org/wikipedia/commons/a/ad/Connect_Four.gif)
 
+### State
 
-## Training data
-The data is taken from a GGP database [Citation Needed]. 
+The state for connect four is represented with 135 bits, the board is 7x7 and each cell can be red, blue or blank and there are two more bits for marking hows turns it is. Sample state:
+```
+((CELL 1 1 W) (CELL 1 0 DIRT) (CELL 2 0 DIRT) (CELL 3 0 DIRT) (CELL 4 0 DIRT) (CELL 5 0 DIRT) (CELL 6 0 DIRT) (CELL 7 0 DIRT) (CELL 2 1 B) (CELL 2 2 B) (CELL 2 3 B) (CELL 2 4 B) (CELL 2 5 B) (CELL 2 6 B) (CELL 3 1 B) (CELL 3 2 B) (CELL 3 3 B) (CELL 3 4 B) (CELL 3 5 B) (CELL 3 6 B) (CELL 4 1 B) (CELL 4 2 B) (CELL 4 3 B) (CELL 4 4 B) (CELL 4 5 B) (CELL 4 6 B) (CELL 5 1 B) (CELL 5 2 B) (CELL 5 3 B) (CELL 5 4 B) (CELL 5 5 B) (CELL 5 6 B) (CELL 6 1 B) (CELL 6 2 B) (CELL 6 3 B) (CELL 6 4 B) (CELL 6 5 B) (CELL 6 6 B) (CELL 7 1 B) (CELL 7 2 B) (CELL 7 3 B) (CELL 7 4 B) (CELL 7 5 B) (CELL 7 6 B) (CELL 1 2 B) (CELL 1 3 B) (CELL 1 4 B) (CELL 1 5 B) (CELL 1 6 B) (CONTROL RED) )
+```
+
+### Action
+The number of actions is seven, one for each pillar which the tokens be dropped. 
+
+## Chinese checkers
+Chinese checkers is a startegy board game where up to 6 players compete, see https://en.wikipedia.org/wiki/Chinese_checkers.
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/ChineseCheckersboard.jpeg" alt="Chinese checkers" width="320">
+
+### State
+The six player version of chinese checkers was used and the state is represented with 253 bits. This is much more complex than connect four, see sample state:
+
+```
+((STEP 14) (CELL C4 RED) (CELL B1 BLANK) (CELL E4 MAGENTA) (CELL C2 BLANK) (CELL F2 BLUE) (CELL F1 BLANK) (CELL F3 TEAL) (CELL H2 BLANK) (CELL F5 GREEN) (CELL F6 BLANK) (CELL C5 YELLOW) (CELL C6 BLANK) (CELL D4 RED) (CELL E1 MAGENTA) (CELL C1 BLANK) (CELL G5 BLUE) (CELL G1 BLANK) (CELL G4 TEAL) (CELL H1 BLANK) (CELL E5 GREEN) (CELL G7 BLANK) (CELL C3 YELLOW) (CELL C7 BLANK) (CELL B2 BLANK) (CELL A1 RED) (CELL D1 MAGENTA) (CELL D2 BLANK) (CELL D3 BLANK) (CELL D5 BLANK) (CELL D6 YELLOW) (CELL E2 BLANK) (CELL E3 BLANK) (CELL F4 BLANK) (CELL G2 BLUE) (CELL G3 BLANK) (CELL G6 GREEN) (CELL I1 TEAL) (CONTROL YELLOW) )
+```
+
+### Action
+
+There are in total 390 actions that can be performed in this game however each role can only perform 90 of them. E.g role1 is the only role able to perform (MOVE A1 B1). However only a few are leagal actions in any given state. 
+
+# Training data
 The states for the games are extracted from the database using the Parse.sql file located under the sql folder for each game. The Parse.sql file selects the states and the actions performed on that state for each role in the given game. It outputs a .csv file that contains the state and actions.
 
 Example line form the training data .csv:
@@ -53,7 +105,7 @@ The last 9 columns are the actions performed on the state for the given role. Th
 
 Note that the actions performed can be different between roles, see Chinese checkers. In Chinese checkers, the sql files are six one for each role. 
 
-## Thoughts while developing
+# Thoughts while developing
 Connect4 was the first game I converted and trained on, these are the mistakes that I encountered in the beginning.
 
 - Imperfect data.
@@ -62,6 +114,7 @@ Connect4 was the first game I converted and trained on, these are the mistakes t
 - Amount of data.
     The amount of data is always a factor to consider when training a classifier. Connect4, breakthrough and chines checkers were selected because they contain the most data. The amount of data is however not great, for example chinses checkers for role0 there are 5892 states, which is not a lot.
 
+
 - How to measure accuracy. 
     One way to measure accuracy is the measure the distance between the predicted labels and the true labels, using for example sum of square differentness.
     Another way is to measure how often the network predicted the correct label. The only problem with this approach is that if for example two actions are equally likely on a given state then the network will only achieve 50% accuracy on that state.
@@ -69,15 +122,22 @@ Connect4 was the first game I converted and trained on, these are the mistakes t
 - Split up the roles. 
     That is do not train on the model on both roles without separation, since the strategy for each role is different and the network could get confused.
 
-# Initial design
+
+## Ideas for further development
+- Shuffle the state and action representations.
+    To reuse the same data we could shuffle the bit array and train the model on many diffrent state and action representations for a single game. This could force the network to learn the lower and higher represntation of the game in the aproprate layers and move the logic resoning to the middle layer. 
+
+- Training with frozen middle layer.
+    A interesting place for further research would be to se if training on multiple roles and then frezing the middle layer results in better performance when training on a unseen role.
+
+
+# Design of the model
 
 As described in the problems description, the task is to design a ANN that can train on multiple games where the middle part of the network trains on every game and the input and output layers get changed between games. 
 
 All the games described in GDL are markov decision processes, meaning that at each state of the game it does not matter how you ended up in that state, the current state only matters (https://en.wikipedia.org/wiki/Markov_property). Therefore, I decided not to invest time into LSTMs or RNNs for this problem, however it would be interesting to see if training an LSTM on these games would improve the accuracy since it would learn the play style of the agents.
 
-I designed the system to use fully connected layers and experimented with many hyper parameters.
-
-To start off a single game was used and tried out many different variations for networks. 
+I designed the system to use fully connected layers and to start off a single game.
 
 This is the initial setup of the network, 
 
@@ -116,6 +176,7 @@ Snapshot from tensorboard of the model:
 <img src="https://raw.githubusercontent.com/thorgeirk11/IndepententStudy/master/screenshots/single_role.png" width="400">
 
 ## Multiple role model
+Since we want to split up the learning between roles for the games the next step was to create a model that could handle 
 Here the model was expanded to allow for multiple output while only taking a single input. The state representation did not between roles only the output space.
 
 ```py

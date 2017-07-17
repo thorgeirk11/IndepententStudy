@@ -14,13 +14,8 @@ from keras import backend as K
 from gpu_utils import make_parallel
 import os
 
-#def get_available_gpus():
-#    local_device_protos = device_lib.list_local_devices()
-#    return [x.name for x in local_device_protos if x.device_type == 'GPU']
-
 VALIDATION_SPLIT = 0.8 # Splits the training and test data 20/80.
 metadata_size = 4 
-GPU_COUNT = 1 #len(get_available_gpus())
 
 dir_path = os.getcwd()
 
@@ -34,6 +29,7 @@ def read_data(file_name, state_size, num_actions):
     labels = pd.read_csv(file_name, usecols = range(metadata_size + state_size, metadata_size + state_size + num_actions), header = None)
     
     data = list(zip(meta.values, features.values, labels.values))
+    random.shuffle(data)
     data = [(item[1],item[2]) for item in data if item[0][3] != 0]
     inputs = [x[0] for x in data]
     labels = [x[1] for x in data]
@@ -44,7 +40,7 @@ def read_data(file_name, state_size, num_actions):
 # -------------------------------------------------------------------
 
 with tf.name_scope("input_connect4"):
-    in_con4 = Input(shape=(135,))
+    in_con4 = Input(shape=(127,))
     con4 = Dense(200, activation='relu')(in_con4)
 
 with tf.name_scope("input_network_chinses_checkers_6"):
@@ -107,8 +103,6 @@ def reset_training(game_info):
 def setup_training(game_info):
     model, name, role = game_info
     with tf.name_scope("Optimizer"):
-        #if GPU_COUNT > 1:
-        #    make_parallel(model, GPU_COUNT)
         model.compile(optimizer='adam',
                     loss='mean_squared_error',
                     metrics=['acc'])
@@ -137,7 +131,8 @@ with tf.name_scope("Train"):
             if use_tensorboard:
                 callbacks.append(
                     TensorBoard(
-                        log_dir= log_dir + ('_pretrained' if pretrained else '') + '_' + str(itteration),
+                        log_dir= log_dir + ('_pretrained' if pretrained else '') + 
+                        '_' + str(itteration),
                         histogram_freq=5,
                         write_grads=True
                     )
@@ -146,24 +141,23 @@ with tf.name_scope("Train"):
             model.fit(
                 np.array(inputs),
                 np.array(labels),
-                batch_size=32 * GPU_COUNT,
+                batch_size=128,
                 epochs=epochs,
                 validation_split=validation_split,
-                callbacks=callbacks,
-                verbose=1
+                callbacks=callbacks
             )
 
-    bt_training =   [setup_training(x) for x in bt_models]
-    con4_training = [setup_training(x) for x in con4_models]
-    #cc6_training =  [setup_training(x) for x in cc6_models]
+    #bt_training =   [setup_training(x) for x in bt_models]
+    #con4_training = [setup_training(x) for x in con4_models]
+    cc6_training =  [setup_training(x) for x in cc6_models]
 
 
     for i in range(3):
-        optimize(con4_training[:1], 15, True, False, 0.4, i)
+        optimize(cc6_training[:1], 15, True, False, 0.4, i)
 
         # Reset the weights
         for model_info in con4_models:
             reset_training(model_info)
 
-        optimize(con4_training[1:], 25, False, False, 0, i)
-        optimize(con4_training[:1], 15, True, True, 0.4, i)
+        optimize(cc6_training[1:], 25, False, False, 0, i)
+        optimize(cc6_training[:1], 15, True, True, 0.4, i)

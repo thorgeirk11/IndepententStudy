@@ -18,7 +18,7 @@ import os
 #    local_device_protos = device_lib.list_local_devices()
 #    return [x.name for x in local_device_protos if x.device_type == 'GPU']
 
-VALIDATION_SPLIT = 0.8 # Splits the training and  data 20/80.
+VALIDATION_SPLIT = 0.8 # Splits the training and test data 20/80.
 metadata_size = 4 
 GPU_COUNT = 1 #len(get_available_gpus())
 

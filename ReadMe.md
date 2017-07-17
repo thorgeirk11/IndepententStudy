@@ -26,9 +26,9 @@ Here is a list of tutorials which I found really useful:
 - Tenorboard is fantastic in visualizing model and the accuracy: https://www.tensorflow.org/get_started/summaries_and_tensorboard
 
 # Games and Data
-The selection of the games depended on how much data was behind each game and the developers familiarty of the games. Connect4, chinese checkers 6 player and breakthroguh were select.
+The selection of the games depended on how much data was behind each game and the developers familiarity of the games. Connect4, Chinese checkers 6 player and breakthrough were select.
 
-The data is from a mysql database [Citation Needed] containg thounds of matches on many diffrent games. Here is the sql code used to find the games with the most data. 
+The data is from a mysql database [Citation Needed] which contains thousands of matches on many different games. Here is the SQL code used to find the games with the most data. 
 ```sql
 select g.name, count(m.match_id) MatchCount, sum(temp.step) as StepCount,  Max(temp.roleindex) from games g
 inner join matches m on m.game = g.name

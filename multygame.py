@@ -96,9 +96,13 @@ session = tf.Session()
 K.set_session(session)
 session.run(tf.global_variables_initializer())
 
-def reset_training(game_info):
+save_path = '{0}/{1}/saved_weights/{2}/role_{3}.h5'
+def load_model(game_info, itteration):
     model, name, role = game_info
-    model.load_weights('{0}/{1}/saved_weights/init/role_{2}.h5'.format(dir_path, name, role))
+    model.load_weights(save_path.format(dir_path, name, itteration, role))
+def save_model(game_info, itteration):
+    model, name, role = game_info
+    model.save_weights(save_path.format(dir_path, name, itteration, role))
 
 def setup_training(game_info):
     model, name, role = game_info
@@ -107,7 +111,7 @@ def setup_training(game_info):
                     loss='mean_squared_error',
                     metrics=['acc'])
         # Save Initial weights
-        model.save_weights('{0}/{1}/saved_weights/init/role_{2}.h5'.format(dir_path, name, role))
+        save_model(game_info, 'init')
 
     file_path = "{0}/data/{0}_role{1}.csv".format(name,role)
     state_size = int(model.get_input_shape_at(0)[1])
@@ -117,47 +121,90 @@ def setup_training(game_info):
 
     return (
         model, 
-        inputs, 
-        labels, 
+        np.array(inputs), 
+        np.array(labels), 
         '{0}/multygame_keras/{1}/role_{2}'.format(dir_path, name, role)
     )
+
+def print_eval(i):
+    eval =      model.evaluate(inputs, labels, verbose=0)
+    eval_test = model.evaluate(inputs_test, labels_test, verbose=0)
+    msg = "{0:>6}: Train Loss {1:>6.1%}  Train Correct {2:>6.1%} | Test Loss {3:>6.1%}  Test Correct {4:>6.1%}"
+    labels_pred = model.predict(inputs_test)
 
 
 with tf.name_scope("Train"):
     def optimize(train_infos, epochs, use_tensorboard, pretrained, validation_split, itteration):
         for model, inputs, labels, log_dir in train_infos:
-            
-            callbacks = [ReduceLROnPlateau(verbose=1)]
+            callbacks = []
             if use_tensorboard:
                 callbacks.append(
                     TensorBoard(
-                        log_dir= log_dir + ('_pretrained' if pretrained else '') + 
-                        '_' + str(itteration),
+                        log_dir= log_dir + ('_pretrained' if pretrained else ''), #+ '_' + str(itteration),
                         histogram_freq=5,
                         write_grads=True
                     )
                 )
 
             model.fit(
-                np.array(inputs),
-                np.array(labels),
+                inputs,
+                labels,
                 batch_size=128,
                 epochs=epochs,
                 validation_split=validation_split,
                 callbacks=callbacks
             )
 
+    def optimize_manual(train_infos, epochs, use_tensorboard, pretrained, validation_split, itteration):
+        
+        for model, inputs, labels, log_dir in train_infos:            
+            writer = tf.summary.FileWriter(log_dir + ('_pretrained' if pretrained else ''))
+            input_batches = np.split(inputs, 82)
+            label_batches = np.split(labels, 82)
+            for epoch in range(epochs):
+                for i in range(len(input_batches)): 
+                    loss, acc = model.train_on_batch(input_batches[i], label_batches[i])
+                    #tf.summary.scalar('loss',loss)
+                    #tf.summary.scalar("accuracy", acc)
+
+                    summary = tf.Summary()
+                    summary_value = summary.value.add()
+                    summary_value.simple_value = loss
+                    summary_value.tag = 'loss'
+                    writer.add_summary(summary, epoch)
+                    
+                    summary = tf.Summary()
+                    summary_value = summary.value.add()
+                    summary_value.simple_value = acc
+                    summary_value.tag = 'accuracy'
+                    writer.add_summary(summary, i+(epoch*82))
+
+                    writer.flush()
+
     #bt_training =   [setup_training(x) for x in bt_models]
     #con4_training = [setup_training(x) for x in con4_models]
     cc6_training =  [setup_training(x) for x in cc6_models]
 
 
-    for i in range(3):
-        optimize(cc6_training[:1], 15, True, False, 0.4, i)
+    
+    optimize_manual(cc6_training[:1], 15, True, False, 0.4, 1)
 
-        # Reset the weights
-        for model_info in con4_models:
-            reset_training(model_info)
+    # Reset the weights
+    for model in cc6_models:
+        load_model(model, 'init')
 
-        optimize(cc6_training[1:], 25, False, False, 0, i)
-        optimize(cc6_training[:1], 15, True, True, 0.4, i)
+    for i in range(100):
+        optimize(cc6_training[1:], 1, False, False, 0, 1)
+    
+
+    optimize_manual(cc6_training[:1], 15, True, True, 0.4, 1)
+
+    
+#print_eval(0)
+#print(len(inputs))
+#input_batches = np.split(inputs, 127)
+#label_batches = np.split(np.array(labels), 127)
+#print(len(input_batches))
+#for i in range(len(input_batches)):
+#    model.train_on_batch(input_batches[i],label_batches[i])
+#    print_eval(i)

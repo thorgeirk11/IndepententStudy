@@ -159,45 +159,54 @@ with tf.name_scope("Train"):
         
         for model, inputs, labels, log_dir in train_infos:            
             writer = tf.summary.FileWriter(log_dir + ('_pretrained' if pretrained else ''))
-            input_batches = np.split(inputs, 82)
-            label_batches = np.split(labels, 82)
+
+            input_batches = np.split(inputs, 86)
+            label_batches = np.split(labels, 86)
+
+            val_size = int(len(input_batches) * validation_split)
+            input_batches = input_batches[val_size:]
+            label_batches = label_batches[val_size:]
+
+            test_input = np.concatenate(input_batches[:val_size])
+            test_label = np.concatenate(label_batches[:val_size])
+
             for epoch in range(epochs):
                 for i in range(len(input_batches)): 
-                    loss, acc = model.train_on_batch(input_batches[i], label_batches[i])
-                    #tf.summary.scalar('loss',loss)
-                    #tf.summary.scalar("accuracy", acc)
+                    train_loss, train_acc = model.train_on_batch(input_batches[i], label_batches[i])
+                    val_loss, val_acc = model.evaluate(test_input, test_label)
 
-                    summary = tf.Summary()
-                    summary_value = summary.value.add()
-                    summary_value.simple_value = loss
-                    summary_value.tag = 'loss'
-                    writer.add_summary(summary, epoch)
-                    
-                    summary = tf.Summary()
-                    summary_value = summary.value.add()
-                    summary_value.simple_value = acc
-                    summary_value.tag = 'accuracy'
-                    writer.add_summary(summary, i+(epoch*82))
+                    def add_summary(val, tag):
+                        summary = tf.Summary()
+                        summary_value = summary.value.add()
+                        summary_value.simple_value = val
+                        summary_value.tag = tag
+                        writer.add_summary(summary, i + (epoch * 86))
+
+                    add_summary(train_loss, "train_loss")
+                    add_summary(train_acc, "train_accuracy")
+                    add_summary(val_loss, "val_loss")
+                    add_summary(val_acc, "val_accuracy")
+
 
                     writer.flush()
 
     #bt_training =   [setup_training(x) for x in bt_models]
-    #con4_training = [setup_training(x) for x in con4_models]
-    cc6_training =  [setup_training(x) for x in cc6_models]
+    con4_training = [setup_training(x) for x in con4_models]
+    #cc6_training =  [setup_training(x) for x in cc6_models]
 
 
     
-    optimize_manual(cc6_training[:1], 15, True, False, 0.4, 1)
+    optimize_manual(con4_training[:1], 15, True, False, 0.4, 1)
 
     # Reset the weights
-    for model in cc6_models:
+    for model in con4_models:
         load_model(model, 'init')
 
     for i in range(100):
-        optimize(cc6_training[1:], 1, False, False, 0, 1)
+        optimize(con4_training[1:], 1, False, False, 0, 1)
     
 
-    optimize_manual(cc6_training[:1], 15, True, True, 0.4, 1)
+    optimize_manual(con4_training[:1], 15, True, True, 0.4, 1)
 
     
 #print_eval(0)

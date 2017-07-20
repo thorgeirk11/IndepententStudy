@@ -193,31 +193,29 @@ with tf.name_scope("Train"):
 
                 writer.flush()
 
-    def run(train_models, models):
-        optimize_manual(train_models[:1], 1000, True, False, 0.4, 1)
+def run(train_models, models):
+    for model in models:
+        load_model(model, 'init')
 
-        for model in models:
-            load_model(model, 'init')
+    optimize_manual(train_models[:1], 1000, True, False, 0.4, 1)
 
-        if len(train_models) > 2:
-            for i in range(100):
-                optimize(train_models[1:], 1, False, False, 0, 1)
-        else:
-            optimize(train_models[1:], 100, False, False, 0, 1)
+    for model in models:
+        load_model(model, 'init')
 
-        optimize_manual(train_models[:1], 1000, True, True, 0.4, 1)
+    if len(train_models) > 2:
+        for i in range(50):
+            optimize(train_models[1:], 1, False, False, 0, 1)
+    else:
+        optimize(train_models[1:], 50, False, False, 0, 1)
 
-    
-    #bt_training =   [setup_training(x) for x in bt_models]
-    con4_training = [setup_training(x) for x in con4_models]
-    #cc6_training =  [setup_training(x) for x in cc6_models]
+    optimize_manual(train_models[:1], 1000, True, True, 0.4, 1)
 
-    run(con4_training, con4_models)
-#print_eval(0)
-#print(len(inputs))
-#input_batches = np.split(inputs, 127)
-#label_batches = np.split(np.array(labels), 127)
-#print(len(input_batches))
-#for i in range(len(input_batches)):
-#    model.train_on_batch(input_batches[i],label_batches[i])
-#    print_eval(i)
+
+bt_training =   [setup_training(x) for x in bt_models]
+run(bt_training, bt_models)
+
+con4_training = [setup_training(x) for x in con4_models]
+run(con4_training, con4_models)
+
+cc6_training =  [setup_training(x) for x in cc6_models]
+run(cc6_training, cc6_models)

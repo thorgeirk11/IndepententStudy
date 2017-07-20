@@ -11,7 +11,6 @@ from keras.callbacks import TensorBoard, ReduceLROnPlateau
 from keras.layers import Input, Dense, Dropout
 from keras.models import Model, Sequential
 from keras import backend as K
-from gpu_utils import make_parallel
 import os
 
 VALIDATION_SPLIT = 0.8 # Splits the training and test data 20/80.
@@ -160,8 +159,12 @@ with tf.name_scope("Train"):
         for model, inputs, labels, log_dir in train_infos:            
             writer = tf.summary.FileWriter(log_dir + ('_pretrained' if pretrained else ''))
 
-            input_batches = np.split(inputs, 86)
-            label_batches = np.split(labels, 86)
+            batch_size = 128
+            total_size =  (len(inputs) - (len(inputs) % batch_size))
+            print(total_size)
+            batch_num = total_size / batch_size
+            input_batches = np.split(inputs[:total_size], batch_num)
+            label_batches = np.split(labels[:total_size], batch_num)
 
             val_size = int(len(input_batches) * validation_split)
             input_batches = input_batches[val_size:]
@@ -180,35 +183,34 @@ with tf.name_scope("Train"):
                         summary_value = summary.value.add()
                         summary_value.simple_value = val
                         summary_value.tag = tag
-                        writer.add_summary(summary, i + (epoch * 86))
+                        writer.add_summary(summary, i + (epoch * len(input_batches)))
 
                     add_summary(train_loss, "train_loss")
                     add_summary(train_acc, "train_accuracy")
                     add_summary(val_loss, "val_loss")
                     add_summary(val_acc, "val_accuracy")
 
-
                     writer.flush()
 
+
+
+    def run(train_models, models):
+        optimize_manual(train_models[:1], 15, True, False, 0.4, 1)
+
+        for model in models:
+            load_model(model, 'init')
+
+        for i in range(100):
+            optimize(train_models[1:], 1, False, False, 0, 1)
+
+        optimize_manual(train_models[:1], 15, True, True, 0.4, 1)
+
+    
     #bt_training =   [setup_training(x) for x in bt_models]
     con4_training = [setup_training(x) for x in con4_models]
     #cc6_training =  [setup_training(x) for x in cc6_models]
 
-
-    
-    optimize_manual(con4_training[:1], 15, True, False, 0.4, 1)
-
-    # Reset the weights
-    for model in con4_models:
-        load_model(model, 'init')
-
-    for i in range(100):
-        optimize(con4_training[1:], 1, False, False, 0, 1)
-    
-
-    optimize_manual(con4_training[:1], 15, True, True, 0.4, 1)
-
-    
+    run(con4_training, con4_models)
 #print_eval(0)
 #print(len(inputs))
 #input_batches = np.split(inputs, 127)

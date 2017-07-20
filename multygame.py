@@ -154,56 +154,58 @@ with tf.name_scope("Train"):
                 callbacks=callbacks
             )
 
-    def optimize_manual(train_infos, epochs, use_tensorboard, pretrained, validation_split, itteration):
+    def optimize_manual(train_infos, batch_count, use_tensorboard, pretrained, validation_split, itteration):
         
         for model, inputs, labels, log_dir in train_infos:            
             writer = tf.summary.FileWriter(log_dir + ('_pretrained' if pretrained else ''))
 
             batch_size = 128
-            total_size =  (len(inputs) - (len(inputs) % batch_size))
-            print(total_size)
-            batch_num = total_size / batch_size
+            total_size = len(inputs) - (len(inputs) % batch_size)
+
+            batch_num = int(total_size / batch_size)
             input_batches = np.split(inputs[:total_size], batch_num)
             label_batches = np.split(labels[:total_size], batch_num)
 
-            val_size = int(len(input_batches) * validation_split)
-            input_batches = input_batches[val_size:]
-            label_batches = label_batches[val_size:]
+            batch_num = int(batch_num * validation_split)
+            input_batches = input_batches[batch_num:]
+            label_batches = label_batches[batch_num:]
 
-            test_input = np.concatenate(input_batches[:val_size])
-            test_label = np.concatenate(label_batches[:val_size])
+            test_input = np.concatenate(input_batches[:batch_num])
+            test_label = np.concatenate(label_batches[:batch_num])
 
-            for epoch in range(epochs):
-                for i in range(len(input_batches)): 
-                    train_loss, train_acc = model.train_on_batch(input_batches[i], label_batches[i])
-                    val_loss, val_acc = model.evaluate(test_input, test_label)
+            for i in range(batch_count):
+                index = i % batch_num
+                train_loss, train_acc = model.train_on_batch(input_batches[index], label_batches[index])
+                val_loss, val_acc = model.evaluate(test_input, test_label)
+                print(" ----- {0} / {1} ".format(i, batch_count))
 
-                    def add_summary(val, tag):
-                        summary = tf.Summary()
-                        summary_value = summary.value.add()
-                        summary_value.simple_value = val
-                        summary_value.tag = tag
-                        writer.add_summary(summary, i + (epoch * len(input_batches)))
+                def add_summary(val, tag):
+                    summary = tf.Summary()
+                    summary_value = summary.value.add()
+                    summary_value.simple_value = val
+                    summary_value.tag = tag
+                    writer.add_summary(summary, i)
 
-                    add_summary(train_loss, "train_loss")
-                    add_summary(train_acc, "train_accuracy")
-                    add_summary(val_loss, "val_loss")
-                    add_summary(val_acc, "val_accuracy")
+                add_summary(train_loss, "train_loss")
+                add_summary(train_acc, "train_accuracy")
+                add_summary(val_loss, "val_loss")
+                add_summary(val_acc, "val_accuracy")
 
-                    writer.flush()
-
-
+                writer.flush()
 
     def run(train_models, models):
-        optimize_manual(train_models[:1], 15, True, False, 0.4, 1)
+        optimize_manual(train_models[:1], 1000, True, False, 0.4, 1)
 
         for model in models:
             load_model(model, 'init')
 
-        for i in range(100):
-            optimize(train_models[1:], 1, False, False, 0, 1)
+        if len(train_models) > 2:
+            for i in range(100):
+                optimize(train_models[1:], 1, False, False, 0, 1)
+        else:
+            optimize(train_models[1:], 100, False, False, 0, 1)
 
-        optimize_manual(train_models[:1], 15, True, True, 0.4, 1)
+        optimize_manual(train_models[:1], 1000, True, True, 0.4, 1)
 
     
     #bt_training =   [setup_training(x) for x in bt_models]

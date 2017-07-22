@@ -122,7 +122,7 @@ def setup_training(game_info):
         model, 
         np.array(inputs), 
         np.array(labels), 
-        '{0}/multygame_keras/{1}/role_{2}'.format(dir_path, name, role)
+        '{0}/multygame_keras/{1}/role_{2}'.format(dir_path, name + "/{0}", role)
     )
 
 def print_eval(i):
@@ -157,7 +157,7 @@ with tf.name_scope("Train"):
     def optimize_manual(train_infos, batch_count, use_tensorboard, pretrained, validation_split, itteration):
         
         for model, inputs, labels, log_dir in train_infos:            
-            writer = tf.summary.FileWriter(log_dir + ('_pretrained' if pretrained else ''))
+            writer = tf.summary.FileWriter(log_dir.format(itteration) + ('_pretrained' if pretrained else ''))
 
             batch_size = 128
             total_size = len(inputs) - (len(inputs) % batch_size)
@@ -176,7 +176,7 @@ with tf.name_scope("Train"):
             for i in range(batch_count):
                 index = i % batch_num
                 train_loss, train_acc = model.train_on_batch(input_batches[index], label_batches[index])
-                val_loss, val_acc = model.evaluate(test_input, test_label)
+                val_loss, val_acc = model.evaluate(test_input, test_label, batch_size=1000)
                 print(" ----- {0} / {1} ".format(i, batch_count))
 
                 def add_summary(val, tag):
@@ -193,29 +193,30 @@ with tf.name_scope("Train"):
 
                 writer.flush()
 
-def run(train_models, models):
-    for model in models:
-        load_model(model, 'init')
+def run(train_models, models, itteration):
+    for model, _, _ in models:
+        model.reset_states()
 
-    optimize_manual(train_models[:1], 1000, True, False, 0.4, 1)
+    optimize_manual(train_models[:1], 1000, True, False, 0.4, itteration)
 
     for model in models:
         load_model(model, 'init')
 
     if len(train_models) > 2:
-        for i in range(50):
-            optimize(train_models[1:], 1, False, False, 0, 1)
+        for i in range(500):
+            optimize(train_models[1:], 1, False, False, 0, itteration)
     else:
-        optimize(train_models[1:], 50, False, False, 0, 1)
+        optimize(train_models[1:], 500, False, False, 0, itteration)
 
-    optimize_manual(train_models[:1], 1000, True, True, 0.4, 1)
-
+    optimize_manual(train_models[:1], 1000, True, True, 0.4, itteration)
 
 bt_training =   [setup_training(x) for x in bt_models]
-run(bt_training, bt_models)
-
 con4_training = [setup_training(x) for x in con4_models]
-run(con4_training, con4_models)
-
 cc6_training =  [setup_training(x) for x in cc6_models]
-run(cc6_training, cc6_models)
+
+itteration = 1
+while True:
+    run(bt_training, bt_models, itteration)
+    run(con4_training, con4_models, itteration)
+    run(cc6_training, cc6_models, itteration)
+    itteration += 1

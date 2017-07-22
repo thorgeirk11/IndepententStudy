@@ -148,7 +148,7 @@ with tf.name_scope("Train"):
             model.fit(
                 inputs,
                 labels,
-                batch_size=128,
+                batch_size=5000,
                 epochs=epochs,
                 validation_split=validation_split,
                 callbacks=callbacks
@@ -176,7 +176,7 @@ with tf.name_scope("Train"):
             for i in range(batch_count):
                 index = i % batch_num
                 train_loss, train_acc = model.train_on_batch(input_batches[index], label_batches[index])
-                val_loss, val_acc = model.evaluate(test_input, test_label, batch_size=1000)
+                val_loss, val_acc = model.evaluate(test_input, test_label, batch_size=2000)
                 print(" ----- {0} / {1} ".format(i, batch_count))
 
                 def add_summary(val, tag):

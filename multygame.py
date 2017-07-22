@@ -195,7 +195,8 @@ with tf.name_scope("Train"):
 
 def run(train_models, models, itteration):
     for model, _, _ in models:
-        model.reset_states()
+        weights = [np.random.permutation(w) for w in model.get_weights()]
+        model.set_weights(weights)
 
     optimize_manual(train_models[:1], 1000, True, False, 0.4, itteration)
 

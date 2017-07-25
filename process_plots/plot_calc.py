@@ -3,7 +3,7 @@ import pandas as pd
 import scipy as sp
 import scipy.stats
 import urllib
-
+from collections import OrderedDict
 
 def mean_confidence_interval(data, confidence=0.95):
     a = 1.0*np.array(data)
@@ -19,7 +19,7 @@ TENSORBOARD_URL = "http://localhost:6006/data/scalars?run=C%5C{0}%5C{2}%5Crole_0
 games = ["connect4","chinese_checkers_6","breakthrough"]
 for game in games:
     for run_type in ["", "_pretrained"]:
-        run_data = {}
+        run_data = OrderedDict()
         for i in range(1, FILE_COUNT):
             url = TENSORBOARD_URL.format(game, run_type, i)
             print(url)
@@ -27,13 +27,15 @@ for game in games:
             urllib.urlretrieve(url, filename)
 
             csv = pd.read_csv(filename, usecols=[1,2])
+            r = 0
             for x,y in csv.values:
-                if not x % 20:
-                    continue
-                if x in run_data.keys():
-                    run_data[x].append(y)
-                else:
-                    run_data[x] = [y]
+                if r % 10 == 0:
+                   # print x
+                    if x in run_data.keys():
+                        run_data[x].append(y)
+                    else:
+                        run_data[x] = [y]
+                r += 1
         interval_data = []
         for key, val_arr in run_data.items():
             mean, interval = mean_confidence_interval(val_arr)

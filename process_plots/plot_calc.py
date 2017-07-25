@@ -13,21 +13,23 @@ def mean_confidence_interval(data, confidence=0.95):
     return mean, interval
 
 
-FILE_COUNT = 5
+FILE_COUNT = 105
 TENSORBOARD_URL = "http://localhost:6006/data/scalars?run=C%5C{0}%5C{2}%5Crole_0{1}&tag=val_accuracy&format=csv"
 
-games = ["connect4","chinese_checkers_6"]
+games = ["connect4","chinese_checkers_6","breakthrough"]
 for game in games:
     for run_type in ["", "_pretrained"]:
         run_data = {}
         for i in range(1, FILE_COUNT):
-            url = TENSORBOARD_URL.format(game,run_type,i)
+            url = TENSORBOARD_URL.format(game, run_type, i)
             print(url)
-            filename = game+ "_" + str(i) + run_type + ".csv"
+            filename = "runs/" + game + "_" + str(i) + run_type + ".csv"
             urllib.urlretrieve(url, filename)
 
             csv = pd.read_csv(filename, usecols=[1,2])
             for x,y in csv.values:
+                if not x % 20:
+                    continue
                 if x in run_data.keys():
                     run_data[x].append(y)
                 else:

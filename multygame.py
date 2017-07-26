@@ -155,7 +155,6 @@ with tf.name_scope("Train"):
             )
 
     def optimize_manual(train_infos, batch_count, use_tensorboard, pretrained, validation_split, itteration):
-        
         for model, inputs, labels, log_dir in train_infos:            
             writer = tf.summary.FileWriter(log_dir.format(itteration) + ('_pretrained' if pretrained else ''))
 
@@ -167,15 +166,15 @@ with tf.name_scope("Train"):
             label_batches = np.split(labels[:total_size], batch_num)
 
             batch_num = int(batch_num * validation_split)
-            input_batches = input_batches[batch_num:]
-            label_batches = label_batches[batch_num:]
+            train_input_batches = input_batches[batch_num:]
+            train_label_batches = label_batches[batch_num:]
 
             test_input = np.concatenate(input_batches[:batch_num])
             test_label = np.concatenate(label_batches[:batch_num])
 
             for i in range(batch_count):
                 index = i % batch_num
-                train_loss, train_acc = model.train_on_batch(input_batches[index], label_batches[index])
+                train_loss, train_acc = model.train_on_batch(train_input_batches[index], train_label_batches[index])
                 val_loss, val_acc = model.evaluate(test_input, test_label, batch_size=2000)
                 print(" ----- {0} / {1} ".format(i, batch_count))
 
@@ -210,6 +209,7 @@ def run(train_models, models, itteration):
         optimize(train_models[1:], 500, False, False, 0, itteration)
 
     optimize_manual(train_models[:1], 1000, True, True, 0.4, itteration)
+    
 
 bt_training =   [setup_training(x) for x in bt_models]
 con4_training = [setup_training(x) for x in con4_models]
@@ -217,7 +217,5 @@ cc6_training =  [setup_training(x) for x in cc6_models]
 
 itteration = 1
 while True:
-    run(bt_training, bt_models, itteration)
-    run(con4_training, con4_models, itteration)
-    run(cc6_training, cc6_models, itteration)
+    run(bt_training + con4_training, bt_models + con4_models, itteration)
     itteration += 1

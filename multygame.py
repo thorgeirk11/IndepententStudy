@@ -175,7 +175,6 @@ with tf.name_scope("Train"):
             for i in range(batch_count):
                 index = i % batch_num
                 
-                train_loss, train_acc = model.train_on_batch(train_input_batches[index], train_label_batches[index])
                 if i % 20 == 0:
                     val_loss, val_acc = model.evaluate(test_input, test_label, batch_size=2000)
                     print(" ----- {0} / {1} ".format(i, batch_count))
@@ -193,6 +192,7 @@ with tf.name_scope("Train"):
                     add_summary(val_acc, "val_accuracy")
 
                     writer.flush()
+                train_loss, train_acc = model.train_on_batch(train_input_batches[index], train_label_batches[index])
 
 def run(train_models, models, itteration):
     for model, _, _ in models:

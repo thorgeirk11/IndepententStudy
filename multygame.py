@@ -217,5 +217,7 @@ cc6_training =  [setup_training(x) for x in cc6_models]
 
 itteration = 1
 while True:
-    run(bt_training + con4_training, bt_models + con4_models, itteration)
+    run(bt_training, bt_models, itteration)
+    run(con4_training, con4_models, itteration)
+    run(cc6_training, cc6_models, itteration)
     itteration += 1

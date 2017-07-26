@@ -28,13 +28,18 @@ for game in games:
 
             csv = pd.read_csv(filename, usecols=[1,2])
             r = 0
+            meanArr = []
             for x,y in csv.values:
-                if r % 10 == 0:
-                   # print x
-                    if x in run_data.keys():
-                        run_data[x].append(y)
+                meanArr.append(y)
+                if r % 20 == 10:
+                    mean = np.mean(meanArr)
+                    #print meanArr
+                    #print mean
+                    if x - 10 in run_data.keys():
+                        run_data[x - 10].append(mean)
                     else:
-                        run_data[x] = [y]
+                        run_data[x - 10] = [mean]
+                    meanArr = []
                 r += 1
         interval_data = []
         for key, val_arr in run_data.items():

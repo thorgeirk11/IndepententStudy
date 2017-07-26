@@ -174,30 +174,32 @@ with tf.name_scope("Train"):
 
             for i in range(batch_count):
                 index = i % batch_num
+                
                 train_loss, train_acc = model.train_on_batch(train_input_batches[index], train_label_batches[index])
-                val_loss, val_acc = model.evaluate(test_input, test_label, batch_size=2000)
-                print(" ----- {0} / {1} ".format(i, batch_count))
+                if i % 20 == 0:
+                    val_loss, val_acc = model.evaluate(test_input, test_label, batch_size=2000)
+                    print(" ----- {0} / {1} ".format(i, batch_count))
 
-                def add_summary(val, tag):
-                    summary = tf.Summary()
-                    summary_value = summary.value.add()
-                    summary_value.simple_value = val
-                    summary_value.tag = tag
-                    writer.add_summary(summary, i)
+                    def add_summary(val, tag):
+                        summary = tf.Summary()
+                        summary_value = summary.value.add()
+                        summary_value.simple_value = val
+                        summary_value.tag = tag
+                        writer.add_summary(summary, i)
 
-                add_summary(train_loss, "train_loss")
-                add_summary(train_acc, "train_accuracy")
-                add_summary(val_loss, "val_loss")
-                add_summary(val_acc, "val_accuracy")
+                    add_summary(train_loss, "train_loss")
+                    add_summary(train_acc, "train_accuracy")
+                    add_summary(val_loss, "val_loss")
+                    add_summary(val_acc, "val_accuracy")
 
-                writer.flush()
+                    writer.flush()
 
 def run(train_models, models, itteration):
     for model, _, _ in models:
         weights = [np.random.permutation(w) for w in model.get_weights()]
         model.set_weights(weights)
 
-    optimize_manual(train_models[:1], 1000, True, False, 0.4, itteration)
+    optimize_manual(train_models[:1], 3000, True, False, 0.4, itteration)
 
     for model in models:
         load_model(model, 'init')
@@ -208,7 +210,7 @@ def run(train_models, models, itteration):
     else:
         optimize(train_models[1:], 500, False, False, 0, itteration)
 
-    optimize_manual(train_models[:1], 1000, True, True, 0.4, itteration)
+    optimize_manual(train_models[:1], 3000, True, True, 0.4, itteration)
     
 
 bt_training =   [setup_training(x) for x in bt_models]

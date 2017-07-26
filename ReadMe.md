@@ -137,7 +137,7 @@ Connect4 was the first game I converted and trained on, these are the mistakes t
 
 As described in the problems description, the task is to design a ANN that can train on multiple games where the middle part of the network trains on every game and the input and output layers get changed between games. 
 
-All the games described in GDL are markov decision processes, meaning that at each state of the game it does not matter how you ended up in that state, the current state only matters (https://en.wikipedia.org/wiki/Markov_property). Therefore, I decided not to invest time into LSTMs or RNNs for this problem, however it would be interesting to see if training an LSTM on these games would improve the accuracy since it would learn the play style of the agents.
+Since all games written in the GDL language are Markov decision problems (https://en.wikipedia.org/wiki/Markov_property), the history for a given state has no effect on the decision made in that state.. Therefore, I decided not to invest time into LSTMs or RNNs for this problem, however it would be interesting to see if training an LSTM on these games would improve the accuracy since it would learn the play style of the agents.
 
 I designed the system to use fully connected layers and to start off a single game.
 

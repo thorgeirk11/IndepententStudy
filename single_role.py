@@ -23,7 +23,6 @@ dir_path = os.getcwd()
 # -------------------------------------------------------------------
 
 def read_data(file_name, state_size, num_actions):
-    print(file_name)
     meta = pd.read_csv(file_name, usecols = range(0,metadata_size), header = None)
     features = pd.read_csv(file_name, usecols = range(metadata_size, metadata_size + state_size), header = None)
     labels = pd.read_csv(file_name, usecols = range(metadata_size + state_size, metadata_size + state_size + num_actions), header = None)
@@ -39,32 +38,32 @@ def read_data(file_name, state_size, num_actions):
 #                           Create Model                             
 # -------------------------------------------------------------------
 
-in_net = Input(shape=(127,))
-net = Dense(200, activation='relu')(in_net)
-net = Dense(500, activation='relu')(net)
-net = Dropout(0.5)(net)
-net = Dense(500, activation='relu')(net)
-net = Dense(50, activation='relu')(net)
-net = Dense(8, activation='softmax')(net)
-con4 = (Model(inputs=in_net, outputs=net), "connect4", 0)
+con4_in = Input(shape=(127,))
+con4_net = Dense(200, activation='relu')(con4_in)
+con4_net = Dense(500, activation='relu')(con4_net)
+con4_net = Dropout(0.5)(con4_net)
+con4_net = Dense(500, activation='relu')(con4_net)
+con4_net = Dense(50, activation='relu')(con4_net)
+con4_net = Dense(8, activation='softmax')(con4_net)
+con4 = (Model(inputs=con4_in, outputs=con4_net), "connect4", 0)
 
-in_net = Input(shape=(253,))
-net = Dense(200, activation='relu')(in_net)
-net = Dense(500, activation='relu')(net)
-net = Dropout(0.5)(net)
-net = Dense(500, activation='relu')(net)
-net = Dense(200, activation='relu')(net)
-net = Dense(90, activation='softmax')(net)
-cc6 = (Model(inputs=in_net, outputs=net), "chinese_checkers_6", 0)
+cc6_in = Input(shape=(253,))
+cc6_net = Dense(200, activation='relu')(cc6_in)
+cc6_net = Dense(500, activation='relu')(cc6_net)
+cc6_net = Dropout(0.5)(cc6_net)
+cc6_net = Dense(500, activation='relu')(cc6_net)
+cc6_net = Dense(200, activation='relu')(cc6_net)
+cc6_net = Dense(90, activation='softmax')(cc6_net)
+cc6 = (Model(inputs=cc6_in, outputs=cc6_net), "chinese_checkers_6", 0)
 
-in_net = Input(shape=(130,))
-net = Dense(200, activation='relu')(in_net)
-net = Dense(500, activation='relu')(net)
-net = Dropout(0.5)(net)
-net = Dense(500, activation='relu')(net)
-net = Dense(200, activation='relu')(net)
-net = Dense(155, activation='softmax')(net)
-bt = (Model(inputs=in_net, outputs=net), "breakthrough", 0)
+bt_in = Input(shape=(130,))
+bt_net = Dense(200, activation='relu')(bt_in)
+bt_net = Dense(500, activation='relu')(bt_net)
+bt_net = Dropout(0.5)(bt_net)
+bt_net = Dense(500, activation='relu')(bt_net)
+bt_net = Dense(200, activation='relu')(bt_net)
+bt_net = Dense(155, activation='softmax')(bt_net)
+bt = (Model(inputs=bt_in, outputs=bt_net), "breakthrough", 0)
 
 
 
@@ -77,22 +76,12 @@ session = tf.Session()
 K.set_session(session)
 session.run(tf.global_variables_initializer())
 
-save_path = '{0}/{1}/saved_weights/{2}/role_{3}.h5'
-def load_model(game_info, itteration):
-    model, name, role = game_info
-    model.load_weights(save_path.format(dir_path, name, itteration, role))
-def save_model(game_info, itteration):
-    model, name, role = game_info
-    model.save_weights(save_path.format(dir_path, name, itteration, role))
-
 def setup_training(game_info):
     model, name, role = game_info
     with tf.name_scope("Optimizer"):
         model.compile(optimizer='adam',
                     loss='mean_squared_error',
                     metrics=['acc'])
-        # Save Initial weights
-        save_model(game_info, 'init')
 
     file_path = "{0}/data/{0}_role{1}.csv".format(name,role)
     state_size = int(model.get_input_shape_at(0)[1])
@@ -111,6 +100,12 @@ def setup_training(game_info):
 
 def optimize(train_info, validation_split, itteration):
     model, inputs, labels, log_dir = train_info        
+
+    print(log_dir.format(itteration))
+    for m, _, _ in [con4, cc6, bt]:
+        weights = [np.random.permutation(w) for w in m.get_weights()]
+        m.set_weights(weights)
+
     writer = tf.summary.FileWriter(log_dir.format(itteration))
 
     batch_size = 128
@@ -124,17 +119,12 @@ def optimize(train_info, validation_split, itteration):
     train_input_batches = input_batches[batch_num:]
     train_label_batches = label_batches[batch_num:]
 
-    test_val_input = np.concatenate(input_batches[:batch_num])
-    test_val_label = np.concatenate(label_batches[:batch_num])
-
-    test_train_input = np.concatenate(input_batches[batch_num:])
-    test_train_label = np.concatenate(label_batches[batch_num:])
+    val_input = np.concatenate(input_batches[:batch_num])
+    val_label = np.concatenate(label_batches[:batch_num])
     
     epoch = 0
     while epoch < 50000:
-
-        train_loss, train_acc = model.evaluate(test_train_input, test_train_label, batch_size=2000)
-        val_loss, val_acc = model.evaluate(test_val_input, test_val_label, batch_size=2000)
+        val_loss, val_acc = model.evaluate(val_input, val_label, batch_size=5000)
 
         def add_summary(val, tag):
             summary = tf.Summary()
@@ -143,15 +133,11 @@ def optimize(train_info, validation_split, itteration):
             summary_value.tag = tag
             writer.add_summary(summary, epoch)
 
-        add_summary(train_loss, "train_loss")
-        add_summary(train_acc, "train_accuracy")
-        add_summary(val_loss, "val_loss")
         add_summary(val_acc, "val_accuracy")
-        msg = "{0:>6}: Train Loss {1:>6.1%}  Train Correct {2:>6.1%} | Test Loss {3:>6.1%}  Test Correct {4:>6.1%}"
-        print(msg.format(epoch,train_loss,train_acc,val_loss,val_acc))
         writer.flush()
 
-        
+        msg = "{0:>6}: Test Loss {1:>6.1%}  Test Correct {2:>6.1%}"
+        print(msg.format(epoch, val_loss, val_acc))
         for index in range(batch_num):
             model.train_on_batch(train_input_batches[index], train_label_batches[index])
          
@@ -161,10 +147,6 @@ con4_model = setup_training(con4)
 cc6_model = setup_training(cc6)
 bt_model = setup_training(bt)
 for i in range(1,101):
-    for model, _, _, _ in [con4_model, cc6_model, bt_model]:
-        weights = [np.random.permutation(w) for w in model.get_weights()]
-        model.set_weights(weights)
-
     optimize(con4_model, 0.4, i)
     optimize(cc6_model, 0.4, i)
     optimize(bt_model, 0.4, i)

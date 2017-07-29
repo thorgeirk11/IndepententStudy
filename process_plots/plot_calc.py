@@ -13,10 +13,10 @@ def mean_confidence_interval(data, confidence=0.99):
     return mean, interval
 
 
-FILE_COUNT = 155
+FILE_COUNT = 51
 TENSORBOARD_URL = "http://localhost:6006/data/scalars?run=C%5C{0}%5C{2}%5Crole_0{1}&tag=val_accuracy&format=csv"
 
-games = ["connect4","chinese_checkers_6","breakthrough"]
+games = ["chinese_checkers_6","connect4","breakthrough"]
 for game in games:
     for run_type in ["", "_pretrained"]:
         run_data = OrderedDict()
@@ -27,28 +27,16 @@ for game in games:
             urllib.urlretrieve(url, filename)
 
             csv = pd.read_csv(filename, usecols=[1,2])
-            #r = 0
-            #meanArr = []
             for x,y in csv.values:
                 if x - 0 in run_data.keys():
                     run_data[x].append(y)
                 else:
                     run_data[x] = [y]
-                #meanArr.append(y)
-                #if r % 3 == 2:
-                #    mean = np.mean(meanArr)
-                    #if x - 0 in run_data.keys():
-                    #    run_data[x - 30].append(mean)
-                    #else:
-                    #    run_data[x - 30] = [mean]
-                    #meanArr = []
-                #r += 1
         interval_data = []
         for key, val_arr in run_data.items():
-            std = np.std(val_arr)
+            std = np.std(1.0*np.array(val_arr))
             mean, interval_95 = mean_confidence_interval(val_arr, 0.95)
-            _, interval_99 = mean_confidence_interval(val_arr, 0.99)
-            interval_data.append([key, mean, std, interval_95, mean + interval_95, interval_99, mean + interval_99])
+            interval_data.append([key, mean, std])
         filename = game + run_type + "_interval_data.csv"
         interval_data = np.array(interval_data)
         np.savetxt(filename, interval_data, delimiter=",")

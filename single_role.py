@@ -40,33 +40,31 @@ def read_data(file_name, state_size, num_actions):
 # -------------------------------------------------------------------
 
 in_net = Input(shape=(127,))
-net = Dense(128, activation='relu')(in_net)
-net = Dense(64, activation='relu')(net)
-net = Dense(128, activation='relu')(net)
-net = Dense(64, activation='relu')(net)
-net = Dense(128, activation='relu')(net)
+net = Dense(200, activation='relu')(in_net)
+net = Dense(500, activation='relu')(net)
+net = Dropout(0.5)(net)
+net = Dense(500, activation='relu')(net)
+net = Dense(50, activation='relu')(net)
 net = Dense(8, activation='softmax')(net)
-con4 = [(Model(inputs=in_net, outputs=net), "connect4", 0)]
-
+con4 = (Model(inputs=in_net, outputs=net), "connect4", 0)
 
 in_net = Input(shape=(253,))
-net = Dense(128, activation='relu')(in_net)
-net = Dense(64, activation='relu')(net)
-net = Dense(128, activation='relu')(net)
-net = Dense(64, activation='relu')(net)
-net = Dense(128, activation='relu')(net)
+net = Dense(200, activation='relu')(in_net)
+net = Dense(500, activation='relu')(net)
+net = Dropout(0.5)(net)
+net = Dense(500, activation='relu')(net)
+net = Dense(200, activation='relu')(net)
 net = Dense(90, activation='softmax')(net)
-cc6 = [(Model(inputs=in_net, outputs=net), "chinese_checkers_6", 0)]
-
+cc6 = (Model(inputs=in_net, outputs=net), "chinese_checkers_6", 0)
 
 in_net = Input(shape=(130,))
-net = Dense(128, activation='relu')(in_net)
-net = Dense(64, activation='relu')(net)
-net = Dense(128, activation='relu')(net)
-net = Dense(64, activation='relu')(net)
-net = Dense(128, activation='relu')(net)
+net = Dense(200, activation='relu')(in_net)
+net = Dense(500, activation='relu')(net)
+net = Dropout(0.5)(net)
+net = Dense(500, activation='relu')(net)
+net = Dense(200, activation='relu')(net)
 net = Dense(155, activation='softmax')(net)
-bt = [(Model(inputs=in_net, outputs=net), "breakthrough", 0)]
+bt = (Model(inputs=in_net, outputs=net), "breakthrough", 0)
 
 
 
@@ -106,14 +104,14 @@ def setup_training(game_info):
         model, 
         np.array(inputs), 
         np.array(labels), 
-        '{0}/multygame_keras/{1}/role_{2}'.format(dir_path, name + "/{0}", role)
+        '{0}/single_role_tests/{1}/role_{2}'.format(dir_path, name + "/{0}", role)
     )
 
 
 
-def optimize_manual(train_infos, batch_count, pretrained, validation_split, itteration):
-    [(model, inputs, labels, log_dir)] = train_infos        
-    writer = tf.summary.FileWriter(log_dir.format(itteration) + ('_pretrained' if pretrained else ''))
+def optimize(train_info, validation_split, itteration):
+    model, inputs, labels, log_dir = train_info        
+    writer = tf.summary.FileWriter(log_dir.format(itteration))
 
     batch_size = 128
     total_size = len(inputs) - (len(inputs) % batch_size)
@@ -133,7 +131,7 @@ def optimize_manual(train_infos, batch_count, pretrained, validation_split, itte
     test_train_label = np.concatenate(label_batches[batch_num:])
     
     epoch = 0
-    while epoch < 80000:
+    while epoch < 50000:
 
         train_loss, train_acc = model.evaluate(test_train_input, test_train_label, batch_size=2000)
         val_loss, val_acc = model.evaluate(test_val_input, test_val_label, batch_size=2000)
@@ -159,9 +157,14 @@ def optimize_manual(train_infos, batch_count, pretrained, validation_split, itte
          
         epoch += batch_num
 
-training = [setup_training(x) for x in con4]
-optimize_manual(training, 1000, False, 0.4, 0)
-training = [setup_training(x) for x in cc6]
-optimize_manual(training, 1000, False, 0.4, 0)
-training = [setup_training(x) for x in bt]
-optimize_manual(training, 1000, False, 0.4, 0)
+con4_model = setup_training(con4)
+cc6_model = setup_training(cc6)
+bt_model = setup_training(bt)
+for i in range(1,101):
+    for model, _, _, _ in [con4_model, cc6_model, bt_model]:
+        weights = [np.random.permutation(w) for w in model.get_weights()]
+        model.set_weights(weights)
+
+    optimize(con4_model, 0.4, i)
+    optimize(cc6_model, 0.4, i)
+    optimize(bt_model, 0.4, i)

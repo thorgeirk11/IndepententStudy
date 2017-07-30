@@ -34,38 +34,6 @@ def read_data(file_name, state_size, num_actions):
     labels = [x[1] for x in data]
     return inputs, labels
 
-# -------------------------------------------------------------------
-#                           Create Model                             
-# -------------------------------------------------------------------
-
-con4_in = Input(shape=(127,))
-con4_net = Dense(200, activation='relu')(con4_in)
-con4_net = Dense(500, activation='relu')(con4_net)
-con4_net = Dropout(0.5)(con4_net)
-con4_net = Dense(500, activation='relu')(con4_net)
-con4_net = Dense(50, activation='relu')(con4_net)
-con4_net = Dense(8, activation='softmax')(con4_net)
-con4 = (Model(inputs=con4_in, outputs=con4_net), "connect4", 0)
-
-cc6_in = Input(shape=(253,))
-cc6_net = Dense(200, activation='relu')(cc6_in)
-cc6_net = Dense(500, activation='relu')(cc6_net)
-cc6_net = Dropout(0.5)(cc6_net)
-cc6_net = Dense(500, activation='relu')(cc6_net)
-cc6_net = Dense(200, activation='relu')(cc6_net)
-cc6_net = Dense(90, activation='softmax')(cc6_net)
-cc6 = (Model(inputs=cc6_in, outputs=cc6_net), "chinese_checkers_6", 0)
-
-bt_in = Input(shape=(130,))
-bt_net = Dense(200, activation='relu')(bt_in)
-bt_net = Dense(500, activation='relu')(bt_net)
-bt_net = Dropout(0.5)(bt_net)
-bt_net = Dense(500, activation='relu')(bt_net)
-bt_net = Dense(200, activation='relu')(bt_net)
-bt_net = Dense(155, activation='softmax')(bt_net)
-bt = (Model(inputs=bt_in, outputs=bt_net), "breakthrough", 0)
-
-
 
 # -------------------------------------------------------------------
 #                         Setup Training                             
@@ -76,8 +44,18 @@ session = tf.Session()
 K.set_session(session)
 session.run(tf.global_variables_initializer())
 
-def setup_training(game_info):
-    model, name, role = game_info
+def setup_training(name, input, output, last_layer):
+    
+    net_in = Input(shape=(input,))
+    net = Dense(200, activation='relu')(net_in)
+    net = Dense(500, activation='relu')(net)
+    net = Dropout(0.5)(net)
+    net = Dense(500, activation='relu')(net)
+    net = Dense(last_layer, activation='relu')(net)
+    net = Dense(output, activation='softmax')(net)
+    model = Model(inputs=net_in, outputs=net)
+    
+    role = 0
     with tf.name_scope("Optimizer"):
         model.compile(optimizer='adam',
                     loss='mean_squared_error',
@@ -102,10 +80,6 @@ def optimize(train_info, validation_split, itteration):
     model, inputs, labels, log_dir = train_info        
 
     print(log_dir.format(itteration))
-    for m, _, _ in [con4, cc6, bt]:
-        weights = [np.random.permutation(w) for w in m.get_weights()]
-        m.set_weights(weights)
-
     writer = tf.summary.FileWriter(log_dir.format(itteration))
 
     batch_size = 128
@@ -142,11 +116,17 @@ def optimize(train_info, validation_split, itteration):
             model.train_on_batch(train_input_batches[index], train_label_batches[index])
          
         epoch += batch_num
+    writer.close()
 
-con4_model = setup_training(con4)
-cc6_model = setup_training(cc6)
-bt_model = setup_training(bt)
 for i in range(1,101):
+    con4_model = setup_training("connect4", 127, 8, 50)
     optimize(con4_model, 0.4, i)
+    del con4_model
+    
+    cc6_model = setup_training("chinese_checkers_6", 253, 90, 200)
     optimize(cc6_model, 0.4, i)
+    del cc6_model
+
+    bt_model = setup_training("breakthrough", 130, 155, 200)
     optimize(bt_model, 0.4, i)
+    del bt_model

@@ -84,8 +84,6 @@ for i in range(2):
         model = (Model(inputs=in_bt, outputs=out), "breakthrough", i)
         bt_models.append(model)
 
-all_game_models = bt_models + con4_models + cc6_models 
-
 # -------------------------------------------------------------------
 #                         Setup Training                             
 # -------------------------------------------------------------------
@@ -186,13 +184,11 @@ with tf.name_scope("Train"):
                         summary_value.tag = tag
                         writer.add_summary(summary, i)
 
-                    add_summary(train_loss, "train_loss")
-                    add_summary(train_acc, "train_accuracy")
                     add_summary(val_loss, "val_loss")
                     add_summary(val_acc, "val_accuracy")
 
                     writer.flush()
-                train_loss, train_acc = model.train_on_batch(train_input_batches[index], train_label_batches[index])
+                model.train_on_batch(train_input_batches[index], train_label_batches[index])
 
 def run(train_models, models, itteration):
     for model, _, _ in models:

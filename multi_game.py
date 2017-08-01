@@ -122,37 +122,14 @@ def setup_training(game_info):
         model, 
         np.array(inputs), 
         np.array(labels), 
-        '{0}/multygame_keras/{1}/role_{2}'.format(dir_path, name + "/{0}", role)
+        '{0}/learn_bt_con_train_cc6/{1}/role_{2}'.format(dir_path, name + "/{0}", role)
     )
 
-def print_eval(i):
-    eval =      model.evaluate(inputs, labels, verbose=0)
-    eval_test = model.evaluate(inputs_test, labels_test, verbose=0)
-    msg = "{0:>6}: Train Loss {1:>6.1%}  Train Correct {2:>6.1%} | Test Loss {3:>6.1%}  Test Correct {4:>6.1%}"
-    labels_pred = model.predict(inputs_test)
-
-
 with tf.name_scope("Train"):
-    def fit(train_infos, epochs, use_tensorboard, pretrained, validation_split, itteration):
-        for model, inputs, labels, log_dir in train_infos:
-            callbacks = []
-            if use_tensorboard:
-                callbacks.append(
-                    TensorBoard(
-                        log_dir= log_dir + ('_pretrained' if pretrained else ''), #+ '_' + str(itteration),
-                        histogram_freq=5,
-                        write_grads=True
-                    )
-                )
-
-            model.fit(
-                inputs,
-                labels,
-                batch_size=15000,
-                epochs=epochs,
-                validation_split=validation_split,
-                callbacks=callbacks
-            )
+    def fit(train_infos, epochs):
+        for i in range(epochs/10):
+            for model, inputs, labels, log_dir in train_infos:
+                model.fit(inputs, labels, batch_size=15000)
 
     def optimize_manual_batches(train_infos, batch_count, use_tensorboard, pretrained, validation_split, itteration):
         for model, inputs, labels, log_dir in train_infos:            
@@ -200,15 +177,13 @@ def random_init_models(models):
         weights = [np.random.permutation(w) for w in model.get_weights()]
         model.set_weights(weights)
 
-bt_training =   [setup_training(x) for x in bt_models]
-con4_training = [setup_training(x) for x in con4_models]
-cc6_training =  [setup_training(x) for x in cc6_models]
-
 itteration = 1
 while True:
-    random_init_models(bt_models + cc6_models)
+    bt_training =   [setup_training(x) for x in bt_models]
+    con4_training = [setup_training(x) for x in con4_models]
+    cc6_training =  [setup_training(x) for x in cc6_models]
     for i in range(500): 
         fit(bt_training + con4_training, 1, False, False, 0, itteration)
     optimize_manual_batches(cc6_training[:1], 3000, True, True, 0.4, itteration)
-
+    del bt_training, con4_training, cc6_training
     itteration += 1

@@ -38,53 +38,56 @@ def read_data(file_name, state_size, num_actions):
 #                           Create Model                             
 # -------------------------------------------------------------------
 
-with tf.name_scope("input_connect4"):
-    in_con4 = Input(shape=(127,))
-    con4 = Dense(200, activation='relu')(in_con4)
+def create_models():
+    with tf.name_scope("input_connect4"):
+        in_con4 = Input(shape=(127,))
+        con4 = Dense(200, activation='relu')(in_con4)
 
-with tf.name_scope("input_network_chinses_checkers_6"):
-    in_cc6 = Input(shape=(253,))
-    cc6 = Dense(200, activation='relu')(in_cc6)
+    with tf.name_scope("input_network_chinses_checkers_6"):
+        in_cc6 = Input(shape=(253,))
+        cc6 = Dense(200, activation='relu')(in_cc6)
 
-with tf.name_scope("input_breakthrough"):
-    in_bt = Input(shape=(130,))
-    bt = Dense(200, activation='relu')(in_bt)
+    with tf.name_scope("input_breakthrough"):
+        in_bt = Input(shape=(130,))
+        bt = Dense(200, activation='relu')(in_bt)
 
-with tf.name_scope("middle_layers"):
-    middle = Sequential([
-        Dense(500, activation='relu', input_shape=(200,)),
-        Dropout(0.5),
-        Dense(500, activation='relu')
-    ])
-    con4_mid = middle(con4)
-    cc6_mid = middle(cc6)
-    bt_mid = middle(bt)
+    with tf.name_scope("middle_layers"):
+        middle = Sequential([
+            Dense(500, activation='relu', input_shape=(200,)),
+            Dropout(0.5),
+            Dense(500, activation='relu')
+        ])
+        con4_mid = middle(con4)
+        cc6_mid = middle(cc6)
+        bt_mid = middle(bt)
 
-con4_models = []
-for i in range(2):
-    with tf.name_scope("output_conncet4_role{0}".format(i)):
-        out = Dense(50, activation='relu')(con4_mid)
-        out = Dense(8, activation='softmax')(out)
-        model = (Model(inputs=in_con4, outputs=out), "connect4", i)
-        con4_models.append(model)
+    con4_models = []
+    for i in range(2):
+        with tf.name_scope("output_conncet4_role{0}".format(i)):
+            out = Dense(50, activation='relu')(con4_mid)
+            out = Dense(8, activation='softmax')(out)
+            model = (Model(inputs=in_con4, outputs=out), "connect4", i)
+            con4_models.append(model)
 
-cc6_models = []
-for i in range(6):
-    with tf.name_scope("output_chinese_checkers_role{0}".format(i)):
-        out = Dense(200, activation='relu')(cc6_mid)
-        out = Dense(90, activation='softmax')(out)
-        model = (Model(inputs=in_cc6, outputs=out), "chinese_checkers_6", i)
-        cc6_models.append(model)
+    cc6_models = []
+    for i in range(6):
+        with tf.name_scope("output_chinese_checkers_role{0}".format(i)):
+            out = Dense(200, activation='relu')(cc6_mid)
+            out = Dense(90, activation='softmax')(out)
+            model = (Model(inputs=in_cc6, outputs=out), "chinese_checkers_6", i)
+            cc6_models.append(model)
 
-bt_models = []
-for i in range(2):
-    with tf.name_scope("output_breakthrough_role{0}".format(i)):
-        out = Dense(200, activation='relu')(bt_mid)
-        out = Dense(155, activation='softmax')(out)
-        model = (Model(inputs=in_bt, outputs=out), "breakthrough", i)
-        bt_models.append(model)
+    bt_models = []
+    for i in range(2):
+        with tf.name_scope("output_breakthrough_role{0}".format(i)):
+            out = Dense(200, activation='relu')(bt_mid)
+            out = Dense(155, activation='softmax')(out)
+            model = (Model(inputs=in_bt, outputs=out), "breakthrough", i)
+            bt_models.append(model)
 
-all_game_models = bt_models + con4_models + cc6_models 
+    return bt_models, con4_models, cc6_models 
+
+
 
 # -------------------------------------------------------------------
 #                         Setup Training                             
@@ -127,9 +130,9 @@ def setup_training(game_info):
 
 with tf.name_scope("Train"):
     def fit(train_infos, epochs):
-        for i in range(epochs/10):
+        for i in range(int(epochs/10)):
             for model, inputs, labels, log_dir in train_infos:
-                model.fit(inputs, labels, batch_size=15000)
+                model.fit(inputs, labels,epochs=10, batch_size=15000)
 
     def optimize_manual_batches(train_infos, batch_count, use_tensorboard, pretrained, validation_split, itteration):
         for model, inputs, labels, log_dir in train_infos:            
@@ -179,11 +182,12 @@ def random_init_models(models):
 
 itteration = 1
 while True:
+    bt_models, con4_models, cc6_models = create_models()
     bt_training =   [setup_training(x) for x in bt_models]
     con4_training = [setup_training(x) for x in con4_models]
     cc6_training =  [setup_training(x) for x in cc6_models]
-    for i in range(500): 
-        fit(bt_training + con4_training, 1, False, False, 0, itteration)
+    fit(bt_training + con4_training, 500)
     optimize_manual_batches(cc6_training[:1], 3000, True, True, 0.4, itteration)
     del bt_training, con4_training, cc6_training
+    del bt_models, con4_models, cc6_models
     itteration += 1

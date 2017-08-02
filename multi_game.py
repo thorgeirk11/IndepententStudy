@@ -125,7 +125,7 @@ def setup_training(game_info):
         model, 
         np.array(inputs), 
         np.array(labels), 
-        '{0}/learn_bt_con_train_cc6/{1}/role_{2}'.format(dir_path, name + "/{0}", role)
+        '{0}/learn_cc6_con_train_bt/{1}/role_{2}'.format(dir_path, name + "/{0}", role)
     )
 
 with tf.name_scope("Train"):
@@ -186,8 +186,8 @@ while True:
     bt_training =   [setup_training(x) for x in bt_models]
     con4_training = [setup_training(x) for x in con4_models]
     cc6_training =  [setup_training(x) for x in cc6_models]
-    fit(bt_training + con4_training, 500)
-    optimize_manual_batches(cc6_training[:1], 3000, True, True, 0.4, itteration)
+    fit(cc6_training + con4_training, 500)
+    optimize_manual_batches(bt_training[:1], 3000, True, True, 0.4, itteration)
     del bt_training, con4_training, cc6_training
     del bt_models, con4_models, cc6_models
     itteration += 1

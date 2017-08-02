@@ -13,12 +13,12 @@ def mean_confidence_interval(data, confidence=0.99):
     return mean, interval
 
 
-FILE_COUNT = 51
+FILE_COUNT = 103
 TENSORBOARD_URL = "http://localhost:6006/data/scalars?run=C%5C{0}%5C{2}%5Crole_0{1}&tag=val_accuracy&format=csv"
 
-games = ["chinese_checkers_6","connect4","breakthrough"]
+games = ["chinese_checkers_6"]
 for game in games:
-    for run_type in ["", "_pretrained"]:
+    for run_type in ["_pretrained"]:
         run_data = OrderedDict()
         for i in range(1, FILE_COUNT):
             url = TENSORBOARD_URL.format(game, run_type, i)
@@ -35,7 +35,7 @@ for game in games:
         interval_data = []
         for key, val_arr in run_data.items():
             std = np.std(1.0*np.array(val_arr))
-            mean, interval_95 = mean_confidence_interval(val_arr, 0.95)
+            mean, _ = mean_confidence_interval(val_arr, 0.95)
             interval_data.append([key, mean, std])
         filename = game + run_type + "_interval_data.csv"
         interval_data = np.array(interval_data)

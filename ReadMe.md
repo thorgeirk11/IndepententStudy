@@ -62,7 +62,7 @@ Connect four is a two player turn taking game that is the simplest game that was
 
 ### State
 
-The state for connect four is represented with 135 bits, the board is 7x7 and each cell can be red, blue or blank and there are two more bits for marking hows turns it is. Sample state:
+The state for connect four is represented with 127 bits, the board is 7x7 and each cell can be red, blue or blank and there are two more bits for marking hows turns it is. Sample state:
 
 > ((CELL 1 1 W) (CELL 1 0 DIRT) (CELL 2 0 DIRT) (CELL 3 0 DIRT) (CELL 4 0 DIRT) (CELL 5 0 DIRT) (CELL 6 0 DIRT) (CELL 7 0 DIRT) (CELL 2 1 B) (CELL 2 2 B) (CELL 2 3 B) (CELL 2 4 B) (CELL 2 5 B) (CELL 2 6 B) (CELL 3 1 B) (CELL 3 2 B) (CELL 3 3 B) (CELL 3 4 B) (CELL 3 5 B) (CELL 3 6 B) (CELL 4 1 B) (CELL 4 2 B) (CELL 4 3 B) (CELL 4 4 B) (CELL 4 5 B) (CELL 4 6 B) (CELL 5 1 B) (CELL 5 2 B) (CELL 5 3 B) (CELL 5 4 B) (CELL 5 5 B) (CELL 5 6 B) (CELL 6 1 B) (CELL 6 2 B) (CELL 6 3 B) (CELL 6 4 B) (CELL 6 5 B) (CELL 6 6 B) (CELL 7 1 B) (CELL 7 2 B) (CELL 7 3 B) (CELL 7 4 B) (CELL 7 5 B) (CELL 7 6 B) (CELL 1 2 B) (CELL 1 3 B) (CELL 1 4 B) (CELL 1 5 B) (CELL 1 6 B) (CONTROL RED) )
 
@@ -101,7 +101,7 @@ This example is taken from connect4. Here we see that the first 4 columns contai
 3. Role index, which role dose the action correspond to.
 4. Score, the score for the role in this match. Can be used to filter out only moves made by the winning roles.
 
-Next comes the encoded state, that is there are 135 rules in connect4 and each rule is either true (1) or false (-1). This state representation is used as input into the neural network. 
+Next comes the encoded state, that is there are 127 rules in connect4 and each rule is either true (1) or false (-1). This state representation is used as input into the neural network. 
 
 The last 9 columns are the actions performed on the state for the given role. This is called one hot encoding (https://www.tensorflow.org/api_docs/python/tf/one_hot), basically only one of the actions is performed (1) in each state and the rest are not performed (0).
 
@@ -146,9 +146,9 @@ This is the initial setup of the network,
 ## Single role model
 The initial model used, note that it is written in pretty-tensor:
 
-The model itself has five fully connected layers and the model was trained on the game connect4 since the state size is 135 and the number of actions is 8. [Mean squared error]((https://en.wikipedia.org/wiki/Mean_squared_error)) (MSE) is used for the loss function, mainly because it was used in alpha-go   (citation needed) and meaningful representation of loss. MSE has a range between 0, no difference and 1 max distance.   
+The model itself has five fully connected layers and the model was trained on the game connect4 since the state size is 127 and the number of actions is 8. [Mean squared error]((https://en.wikipedia.org/wiki/Mean_squared_error)) (MSE) is used for the loss function, mainly because it was used in alpha-go   (citation needed) and meaningful representation of loss. MSE has a range between 0, no difference and 1 max distance.   
 ```py
-state_size = 135
+state_size = 127
 num_actions = 8
 
 # Input into the network, the state
@@ -183,7 +183,7 @@ Here the model was expanded to allow for multiple output while only taking a sin
 
 ```py
 with tf.name_scope("input_network"):
-    in_con4 = Input(shape=(135,))
+    in_con4 = Input(shape=(127,))
     con4 = Dense(200, activation='relu')(in_con4)
 
 with tf.name_scope("middle_network"):
@@ -211,7 +211,7 @@ This model the most advanced model
 
 ```py
 with tf.name_scope("input_network_connect4"):
-    in_con4 = Input(shape=(135,))
+    in_con4 = Input(shape=(127,))
     con4 = Dense(200, activation='relu')(in_con4)
 
 with tf.name_scope("input_network_breakthrough"):

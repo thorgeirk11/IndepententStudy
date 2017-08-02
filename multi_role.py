@@ -18,6 +18,10 @@ metadata_size = 4
 
 dir_path = os.getcwd()
 
+# Only One GPU (https://github.com/fchollet/keras/issues/6031)
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
+
 # -------------------------------------------------------------------
 #                           Read Data
 # -------------------------------------------------------------------
@@ -88,8 +92,9 @@ for i in range(2):
 #                         Setup Training                             
 # -------------------------------------------------------------------
 
-
-session = tf.Session()
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True
+session = tf.Session(config=config)
 K.set_session(session)
 session.run(tf.global_variables_initializer())
 

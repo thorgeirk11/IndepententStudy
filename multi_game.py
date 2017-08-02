@@ -17,6 +17,8 @@ VALIDATION_SPLIT = 0.8 # Splits the training and test data 20/80.
 metadata_size = 4 
 
 dir_path = os.getcwd()
+# Only One GPU (https://github.com/fchollet/keras/issues/6031)
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 # -------------------------------------------------------------------
 #                           Read Data
@@ -94,7 +96,9 @@ def create_models():
 # -------------------------------------------------------------------
 
 
-session = tf.Session()
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True
+session = tf.Session(config=config)
 K.set_session(session)
 session.run(tf.global_variables_initializer())
 
@@ -186,8 +190,8 @@ while True:
     bt_training =   [setup_training(x) for x in bt_models]
     con4_training = [setup_training(x) for x in con4_models]
     cc6_training =  [setup_training(x) for x in cc6_models]
-    fit(cc6_training + con4_training, 500)
-    optimize_manual_batches(bt_training[:1], 3000, True, True, 0.4, itteration)
+    fit(cc6_training + bt_training, 300)
+    optimize_manual_batches(con4_training[:1], 3000, True, True, 0.4, itteration)
     del bt_training, con4_training, cc6_training
     del bt_models, con4_models, cc6_models
     itteration += 1

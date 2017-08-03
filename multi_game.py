@@ -5,6 +5,7 @@ import numpy as np
 import numpy
 import pandas as pd
 import random
+import sys
 
 from tensorflow.python.client import device_lib
 from keras.callbacks import TensorBoard, ReduceLROnPlateau
@@ -129,14 +130,14 @@ def setup_training(game_info):
         model, 
         np.array(inputs), 
         np.array(labels), 
-        '{0}/learn_cc6_con_train_bt/{1}/role_{2}'.format(dir_path, name + "/{0}", role)
+        '{0}/learn_cc6_bt_train_con/{1}/role_{2}'.format(dir_path, name + "/{0}", role)
     )
 
 with tf.name_scope("Train"):
     def fit(train_infos, epochs):
         for i in range(int(epochs/10)):
             for model, inputs, labels, log_dir in train_infos:
-                model.fit(inputs, labels,epochs=10, batch_size=15000)
+                model.fit(inputs, labels,epochs=10, batch_size=15000, verbose=0)
 
     def optimize_manual_batches(train_infos, batch_count, use_tensorboard, pretrained, validation_split, itteration):
         for model, inputs, labels, log_dir in train_infos:            
@@ -185,13 +186,16 @@ def random_init_models(models):
         model.set_weights(weights)
 
 itteration = 1
-while True:
+max_itterations = 100
+if len(sys.argv) > 1:
+    itteration = int(sys.argv[1])
+    max_itterations = int(sys.argv[2])
+for i in range(itteration, itteration + max_itterations + 1):
     bt_models, con4_models, cc6_models = create_models()
     bt_training =   [setup_training(x) for x in bt_models]
     con4_training = [setup_training(x) for x in con4_models]
     cc6_training =  [setup_training(x) for x in cc6_models]
     fit(cc6_training + bt_training, 300)
-    optimize_manual_batches(con4_training[:1], 3000, True, True, 0.4, itteration)
+    optimize_manual_batches(con4_training[:1], 3000, True, True, 0.4, i)
     del bt_training, con4_training, cc6_training
     del bt_models, con4_models, cc6_models
-    itteration += 1

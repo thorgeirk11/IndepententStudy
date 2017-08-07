@@ -5,6 +5,7 @@ import numpy as np
 import numpy
 import pandas as pd
 import random
+import sys
 
 from tensorflow.python.client import device_lib
 from keras.callbacks import TensorBoard, ReduceLROnPlateau
@@ -200,7 +201,7 @@ def run(train_models, models, itteration):
         weights = [np.random.permutation(w) for w in model.get_weights()]
         model.set_weights(weights)
 
-    optimize_manual(train_models[:1], 3000, True, False, 0.4, itteration)
+    optimize_manual(train_models[:1], 15000, True, False, 0.4, itteration)
 
     for model in models:
         load_model(model, 'init')
@@ -211,16 +212,20 @@ def run(train_models, models, itteration):
     else:
         optimize(train_models[1:], 500, False, False, 0, itteration)
 
-    optimize_manual(train_models[:1], 3000, True, True, 0.4, itteration)
+    optimize_manual(train_models[:1], 15000, True, True, 0.4, itteration)
     
 
 bt_training =   [setup_training(x) for x in bt_models]
 con4_training = [setup_training(x) for x in con4_models]
 cc6_training =  [setup_training(x) for x in cc6_models]
 
+
 itteration = 1
-while True:
-    run(bt_training, bt_models, itteration)
-    run(con4_training, con4_models, itteration)
-    run(cc6_training, cc6_models, itteration)
-    itteration += 1
+max_itterations = 100
+if len(sys.argv) > 1:
+    itteration = int(sys.argv[1])
+    max_itterations = int(sys.argv[2])
+for i in range(itteration, itteration + max_itterations + 1):
+    run(bt_training, bt_models, i)
+    run(con4_training, con4_models, i)
+    run(cc6_training, cc6_models, i)

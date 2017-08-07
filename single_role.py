@@ -80,7 +80,7 @@ def optimize(train_info, validation_split, itteration):
     model, inputs, labels, log_dir = train_info        
 
     print(log_dir.format(itteration))
-    writer = tf.summary.FileWriter(log_dir.format(itteration))
+    writer = tf.summary.FileWriter(log_dir.format(itteration), session.graph)
 
     batch_size = 128
     total_size = len(inputs) - (len(inputs) % batch_size)

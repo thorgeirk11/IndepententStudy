@@ -16,9 +16,9 @@ def mean_confidence_interval(data, confidence=0.99):
 FILE_COUNT = 103
 TENSORBOARD_URL = "http://localhost:6006/data/scalars?run=C%5C{0}%5C{2}%5Crole_0{1}&tag=val_accuracy&format=csv"
 
-games = ["chinese_checkers_6"]
+games = ["connect4","breakthrough"]
 for game in games:
-    for run_type in ["_pretrained"]:
+    for run_type in ["", "_pretrained"]:
         run_data = OrderedDict()
         for i in range(1, FILE_COUNT):
             url = TENSORBOARD_URL.format(game, run_type, i)

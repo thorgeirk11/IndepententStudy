@@ -198,7 +198,7 @@ thorgeirk11@ru.is\\
 \section{Experimental setup}
     There were three experiment types conducted; single role, multi-role and multi-game experiments. All of the  experiments were run over a 100 times and a 95\% confidence interval is shown on the results.
     
-    All of the experiments were done on all three games where the batch consits of 128 samples. The experiments were run for either 3.000 or 15.000 batches. After each training batch the model was estimated on unseen test data and the validation accuracy plotted.  
+    All of the experiments were done on all three games where the batch consits of 128 samples. The experiments were run for 15.000 batches and after each training batch the model was estimated on unseen validation data and the accuracy plotted.  
     
     \subsection{Single Role Experiments}
         The single role experiment is trained on a randomly initialized model for 50.000 batches. This was done to show how the learning curves evolved for each of the games. It also serves as a baseline for the other experiments and are used to compare the performance of the other approaches. 
@@ -216,12 +216,11 @@ thorgeirk11@ru.is\\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Results}
-This section details the results from all three types of experiments. 
+This section details the results from all three types of experiments. All of the following graphs have the same structure, the y axis is the accuracy achieved and the x axis is the number of training batches trained. The lines indicate the mean accuracy where the red squares and the blue circles indicates the pre-trained and randomly initialized models, respectively. The area around each line indicates the 95\% confidence intervals.
 
-\subsection{Single-role experiments}
-%In the singe-role experiment, see figure-\ref{plot:single-role}, shows the models learning curve for the individual games when trained on a single role for that particular game.
+\subsection{Single-role experiment}
+The single-role experiment, see figure-\ref{fig:single-role}, shows the learning curves for the individual games. Connect four, Breakthrough and Chinese checkers are represented by the red squares, blue circles and green diamonds, respectively. The graph shows that the accuracy for each game is different, which is mainly due to the complexity of the games. This experiment serves as a baseline for all of the games and was run for 50.000 batches.
 
-The single-role experiment, see figure-\ref{fig:single-role}, shows the learning curves for the individual games. Connect four, Breakthrough and chinese checkers are represented by the red squares, blue circles and green diamonds, respectively. the accuracy for each of the games are different. Here is the baseline runs for all of the games when run for 50.000 batches.
 \begin{figure}[H]
     \begin{tikzpicture}
         \begin{axis}[
@@ -237,20 +236,19 @@ The single-role experiment, see figure-\ref{fig:single-role}, shows the learning
                 +[thick, mark=square*, mark options={fill=red}, mark repeat=5, mark size=2, red!50!black] 
                 table [x index=0, y index=1,col sep=comma]
                 {data/connect4_long_run.csv};
-                   
+
             \errorband[blue, opacity=0.5,forget plot] {data/breakthrough_long_run.csv}{0}{1}{2}
             \addplot
                 +[thick, mark=*, mark options={fill=blue}, mark repeat=5, mark size=2, blue!50!black] 
                 table [x index=0, y index=1,col sep=comma]
                 {data/breakthrough_long_run.csv};
-                         +-
+
             \errorband[green, opacity=0.5,forget plot]{data/chinese_checkers_6_long_run.csv}{0}{1}{2}
             \addplot
                 +[thick, mark=diamond*, mark options={fill=green}, mark repeat=5, mark size=2.5, green!50!black] 
                 table [x index=0, y index=1,col sep=comma]
                 {data/chinese_checkers_6_long_run.csv};
-            
-               
+
             \legend{Connect four, Breakthrough, Chinese Checkers}
         \end{axis}
         \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
@@ -261,42 +259,8 @@ The single-role experiment, see figure-\ref{fig:single-role}, shows the learning
     \label{fig:single-role}
 \end{figure}
 
-
-\subsection{Multi-role experiments}
-Here are the results from the multi-role experiments. All of the following graphs have the same structure, the y axis is the accuracy achieved and the x axis is the number of training batches trained. The lines indicate the mean accuracy where the red squares and the blue circles indicates the pre-trained and randomly initialized models, respectively. The area around each line indicates the 95\% confidence intervals.
-
-\begin{figure}[H]
-    \begin{tikzpicture}
-        \begin{axis}[
-            ymin= 0,
-            xlabel=Batches Trained,
-            ylabel=Accuracy on validation set,
-            legend pos= south east,
-            legend cell align=left,
-            yticklabel={\pgfmathparse{\tick*100}\pgfmathprintnumber{\pgfmathresult}\%}
-        ]
-            \errorband[red, opacity=0.5,forget plot]{data/connect4_pretrained_interval_data.csv}{0}{1}{2}
-            \addplot
-                +[thick, mark=square*, mark options={fill=red}, mark repeat=20, mark size=2, red!50!black] 
-                table [x index=0, y index=1,col sep=comma]
-                {data/connect4_pretrained_interval_data.csv};
-                   
-            \errorband[blue, opacity=0.5,forget plot] {data/connect4_interval_data.csv}{0}{1}{2}
-            \addplot
-                +[thick, mark=*, mark options={fill=blue}, mark repeat=20, mark size=2, blue!50!black] 
-                table [x index=0, y index=1,col sep=comma]
-                {data/connect4_interval_data.csv};
-            
-            \legend{Pre-trained, Random Init}
-        \end{axis}
-        \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
-            at (current bounding box.north)
-            {Connect four};
-    \end{tikzpicture}
-    \caption{Connect four pre-trained vs randomly initialized.
-        The lines indicate mean accuracy where the red squares and blue circles represent the pre-trained and randomly initialized models, respectively. The areas around the lines are the 95\% confidence intervals.}
-    \label{fig:connect4}
-\end{figure}
+\subsection{Multi-role, Connect four}
+As can be seen in figure-\ref{fig:connect4}, the pre-trained model has an advantage early on and achieves much higher accuracy for the first thousand batches. However the graph also indicates that the gap between the two models shrinks substantially as the learned batch number increases.  
 
 \begin{figure}[H]
     \begin{tikzpicture}
@@ -332,41 +296,11 @@ Here are the results from the multi-role experiments. All of the following graph
     \label{fig:connect4}
 \end{figure}
 
-\subsubsection{Connect four}
-As can be seen in figure-\ref{fig:connect4}, the pre-trained model has an advantage early on and achieves much higher accuracy for the first thousand batches. However the graph also indicates that the gap between the two models shrinks substantially as the learned batch number increases.  
+\subsection{Multi-role, Breakthrough}
+For the Breakthrough test, see figure-\ref{plot:breakthrough}, we can also clearly see that the pre-trained model has an advantage early on and achieves much higher accuracy for the first thousand batches. Note that the standard deviation is much larger then for Connect four, which should be expected since this game is more complex. The standard deviation is also lower on the pre-trained model which also is a good indicator that the training has learn some weights that are in general better suited for training. 
 
-\begin{figure}[H]
-    \begin{tikzpicture}
-        \begin{axis}[
-            ymin= 0,
-            xlabel=Batches Trained,
-            ylabel=Accuracy on validation set,
-            legend pos= south east,
-            legend cell align=left,
-            yticklabel={\pgfmathparse{\tick*100}\pgfmathprintnumber{\pgfmathresult}\%}
-        ]
-            \errorband[red, opacity=0.5, forget plot]{data/breakthrough_pretrained_interval_data.csv}{0}{1}{2}
-            \addplot
-                +[thick, mark=square*, mark options={fill=red}, mark repeat=20, mark size=2, red!50!black] 
-                table [x index=0, y index=1,col sep=comma]
-                {data/breakthrough_pretrained_interval_data.csv};
-               
-            \errorband[blue, opacity=0.5,forget plot]{data/breakthrough_interval_data.csv}{0}{1}{2}
-            \addplot
-                +[thick, mark=*, mark options={fill=blue}, mark repeat=20, mark size=2, blue!50!black] 
-                table [x index=0, y index=1,col sep=comma]
-                {data/breakthrough_interval_data.csv};
-            
-               
-            \legend{Pre-trained, Random Init}
-        \end{axis}
-        \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
-            at (current bounding box.north)
-            {Breakthrough};
-    \end{tikzpicture}
-    \caption{Breakthrough. The lines indicate mean accuracy where the red squares and blue circles represent the pre-trained and randomly initialized models, respectively. The areas around the lines are the 95\% confidence intervals.}
-    \label{plot:breakthrough}
-\end{figure}
+The gap between the pre-trained and random models dose not shrink all too much for the first 3000 batches. However these results should be taken with a grain of salt since the accuracy of both models is very poor, less than 30\%.
+
 \begin{figure}[H]
     \begin{tikzpicture}
         \begin{axis}[
@@ -400,10 +334,10 @@ As can be seen in figure-\ref{fig:connect4}, the pre-trained model has an advant
     \label{plot:breakthrough}
 \end{figure}
 
-\subsubsection{Breakthrough}
-For the Breakthrough test, see figure-\ref{plot:breakthrough}, we can also clearly see that the pre-trained model has an advantage early on and achieves much higher accuracy for the first thousand batches. Note that the standard deviation is much larger then for Connect four, which should be expected since this game is more complex. The standard deviation is also lower on the pre-trained model which also is a good indicator that the training has learn some weights that are in general better suited for training. 
+\subsubsection{Multi-role, Chinese checkers}
+For the Chinese checkers experiment, see figure-\ref{fig:cc6}. %This game was the most complex game of the three and as can be seen the pre-training, although achieving on average better results has so wild fluctuations that is not guaranteed to out perform a randomly initialized model. 
 
-The gap between the pre-trained and random models dose not shrink all too much for the first 3000 batches. However these results should be taken with a grain of salt since the accuracy of both models is very poor, less than 30\%.
+Note that in contrast to Breakthrough the pre-trained model has a higher standard deviation than the random initialized model.
 
 \begin{figure}[H]
     \begin{tikzpicture}
@@ -437,14 +371,9 @@ The gap between the pre-trained and random models dose not shrink all too much f
     \caption{Chinese checkers. The lines indicate mean accuracy where the red squares and blue circles represent the pre-trained and randomly initialized models, respectively. The areas around the lines are the 95\% confidence interval.  }
     \label{fig:cc6}
 \end{figure}
-\subsubsection{Chinese checkers}
-For the Chinese checkers experiment, see figure-\ref{fig:cc6}. %This game was the most complex game of the three and as can be seen the pre-training, although achieving on average better results has so wild fluctuations that is not guaranteed to out perform a randomly initialized model. 
-
-Note that in contrast to Breakthrough the pre-trained model has a higher standard deviation than the random initialized model.
 
 
-
-\subsection{Multi-game experiments}
+\section{Multi-game experiments}
 Here are the results from the mulit-game experiments. 
 \begin{figure}[H]
     \begin{tikzpicture}
@@ -510,6 +439,8 @@ Here are the results from the mulit-game experiments.
     \caption{ Multi-game trained model (green diamonds) vs randomly initialized model (blue circles). The pre-trained model is trained on Breakthrough (BT) and Connect four (Con4).  The area around each line represents the 95\% confidence interval. }
     \label{fig:cc6}
 \end{figure}
+
+
 \begin{figure}[H]
     \begin{tikzpicture}
         \begin{axis}[

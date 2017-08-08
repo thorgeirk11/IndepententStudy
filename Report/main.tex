@@ -23,8 +23,8 @@
 \usepackage{fixltx2e}
 
 \newtoggle{render_graphs}
-%\toggletrue{render_graphs}
-\togglefalse{render_graphs}
+\toggletrue{render_graphs}
+%\togglefalse{render_graphs}
 
 % Takes six arguments: data table name, x column, y column, error column,
 % color and error bar opacity.
@@ -219,7 +219,9 @@ thorgeirk11@ru.is\\
 This section details the results from all three types of experiments. 
 
 \subsection{Single-role experiments}
-%In the singe-role experiment, see figure-\ref{plot:single-role}, shows the models learning curve for the individual games when trained on a single role for that particular game. 
+%In the singe-role experiment, see figure-\ref{plot:single-role}, shows the models learning curve for the individual games when trained on a single role for that particular game.
+
+The single-role experiment, see figure-\ref{fig:single-role}, shows the learning curves for the individual games. Connect four, Breakthrough and chinese checkers are represented by the red squares, blue circles and green diamonds, respectively. the accuracy for each of the games are different. Here is the baseline runs for all of the games when run for 50.000 batches.
 \begin{figure}[H]
     \begin{tikzpicture}
         \begin{axis}[
@@ -230,35 +232,33 @@ This section details the results from all three types of experiments.
             legend cell align=left,
             yticklabel={\pgfmathparse{\tick*100}\pgfmathprintnumber{\pgfmathresult}\%}
         ]
-        \iftoggle{render_graphs}{
             \errorband[red, opacity=0.5,forget plot]{data/connect4_long_run.csv}{0}{1}{2}
             \addplot
                 +[thick, mark=square*, mark options={fill=red}, mark repeat=5, mark size=2, red!50!black] 
                 table [x index=0, y index=1,col sep=comma]
                 {data/connect4_long_run.csv};
                    
-            \errorband[green, opacity=0.5,forget plot] {data/breakthrough_long_run.csv}{0}{1}{2}
+            \errorband[blue, opacity=0.5,forget plot] {data/breakthrough_long_run.csv}{0}{1}{2}
             \addplot
-                +[thick, mark=*, mark options={fill=green}, mark repeat=5, mark size=2, green!50!black] 
+                +[thick, mark=*, mark options={fill=blue}, mark repeat=5, mark size=2, blue!50!black] 
                 table [x index=0, y index=1,col sep=comma]
                 {data/breakthrough_long_run.csv};
-                         
-            \errorband[blue, opacity=0.5,forget plot]{data/chinese_checkers_6_long_run.csv}{0}{1}{2}
+                         +-
+            \errorband[green, opacity=0.5,forget plot]{data/chinese_checkers_6_long_run.csv}{0}{1}{2}
             \addplot
-                +[thick, mark=diamond*, mark options={fill=blue}, mark repeat=5, mark size=2.5, blue!50!black] 
+                +[thick, mark=diamond*, mark options={fill=green}, mark repeat=5, mark size=2.5, green!50!black] 
                 table [x index=0, y index=1,col sep=comma]
                 {data/chinese_checkers_6_long_run.csv};
             
                
             \legend{Connect four, Breakthrough, Chinese Checkers}
-        }
         \end{axis}
         \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
             at (current bounding box.north)
             {Single-role run for 50.000 batches};
     \end{tikzpicture}
     \caption{Here is the baseline runs for all of the games when run for 50.000 batches. All of these runs were done on a randomly initialized models. The area around each line represents the 95\% confidence interval.}
-    \label{plot:single-role}
+    \label{fig:single-role}
 \end{figure}
 
 
@@ -275,8 +275,6 @@ Here are the results from the multi-role experiments. All of the following graph
             legend cell align=left,
             yticklabel={\pgfmathparse{\tick*100}\pgfmathprintnumber{\pgfmathresult}\%}
         ]
-        \iftoggle{render_graphs}{
-        
             \errorband[red, opacity=0.5,forget plot]{data/connect4_pretrained_interval_data.csv}{0}{1}{2}
             \addplot
                 +[thick, mark=square*, mark options={fill=red}, mark repeat=20, mark size=2, red!50!black] 
@@ -290,15 +288,13 @@ Here are the results from the multi-role experiments. All of the following graph
                 {data/connect4_interval_data.csv};
             
             \legend{Pre-trained, Random Init}
-        }
         \end{axis}
         \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
             at (current bounding box.north)
             {Connect four};
     \end{tikzpicture}
     \caption{Connect four pre-trained vs randomly initialized.
-        The lines indicate mean accuracy where the red squares and blue circles represent the pre-trained and randomly initialized models, respectively. The areas around the lines are the 95\% confidence intervals.
-}
+        The lines indicate mean accuracy where the red squares and blue circles represent the pre-trained and randomly initialized models, respectively. The areas around the lines are the 95\% confidence intervals.}
     \label{fig:connect4}
 \end{figure}
 
@@ -312,7 +308,6 @@ Here are the results from the multi-role experiments. All of the following graph
             legend cell align=left,
             yticklabel={\pgfmathparse{\tick*100}\pgfmathprintnumber{\pgfmathresult}\%}
         ]
-        \iftoggle{render_graphs}{
             \errorband[red, opacity=0.5,forget plot]{data/connect4_pretrained_15000.csv}{0}{1}{2}
             \addplot
                 +[thick, mark=square*, mark options={fill=red}, mark repeat=20, mark size=2, red!50!black] 
@@ -326,7 +321,6 @@ Here are the results from the multi-role experiments. All of the following graph
                 {data/connect4_15000.csv};
             
             \legend{Pre-trained, Random Init}
-        }
         \end{axis}
         \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
             at (current bounding box.north)
@@ -351,7 +345,6 @@ As can be seen in figure-\ref{fig:connect4}, the pre-trained model has an advant
             legend cell align=left,
             yticklabel={\pgfmathparse{\tick*100}\pgfmathprintnumber{\pgfmathresult}\%}
         ]
-        \iftoggle{render_graphs}{
             \errorband[red, opacity=0.5, forget plot]{data/breakthrough_pretrained_interval_data.csv}{0}{1}{2}
             \addplot
                 +[thick, mark=square*, mark options={fill=red}, mark repeat=20, mark size=2, red!50!black] 
@@ -366,7 +359,6 @@ As can be seen in figure-\ref{fig:connect4}, the pre-trained model has an advant
             
                
             \legend{Pre-trained, Random Init}
-        }
         \end{axis}
         \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
             at (current bounding box.north)
@@ -385,7 +377,6 @@ As can be seen in figure-\ref{fig:connect4}, the pre-trained model has an advant
             legend cell align=left,
             yticklabel={\pgfmathparse{\tick*100}\pgfmathprintnumber{\pgfmathresult}\%}
         ]
-        \iftoggle{render_graphs}{
             \errorband[red, opacity=0.5, forget plot]{data/breakthrough_pretrained_15000.csv}{0}{1}{2}
             \addplot
                 +[thick, mark=square*, mark options={fill=red}, mark repeat=20, mark size=2, red!50!black] 
@@ -400,7 +391,6 @@ As can be seen in figure-\ref{fig:connect4}, the pre-trained model has an advant
             
                
             \legend{Pre-trained, Random Init}
-        }
         \end{axis}
         \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
             at (current bounding box.north)
@@ -425,7 +415,6 @@ The gap between the pre-trained and random models dose not shrink all too much f
             legend cell align=left,
             yticklabel={\pgfmathparse{\tick*100}\pgfmathprintnumber{\pgfmathresult}\%}
         ]
-        \iftoggle{render_graphs}{
             \errorband[red, opacity=0.5,forget plot]{data/chinese_checkers_6_pretrained_interval_data.csv}{0}{1}{2}
             \addplot
                 +[thick, mark=square*, mark options={fill=red}, mark repeat=20, mark size=2, red!50!black] 
@@ -440,7 +429,6 @@ The gap between the pre-trained and random models dose not shrink all too much f
             
             
             \legend{Pre-trained, Random Init}
-        }
         \end{axis}
         \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
             at (current bounding box.north)
@@ -468,7 +456,6 @@ Here are the results from the mulit-game experiments.
             legend cell align=left,
             yticklabel={\pgfmathparse{\tick*100}\pgfmathprintnumber{\pgfmathresult}\%}
         ]
-        \iftoggle{render_graphs}{
             \errorband[green, opacity=0.5,forget plot]{data/bt_trained_on_cc6+con4_(100trials).csv}{0}{1}{2}
             \addplot
                 +[thick,mark=diamond*, mark options={fill=green}, mark repeat=20, mark size=3, green!50!black] 
@@ -483,7 +470,6 @@ Here are the results from the mulit-game experiments.
             
             
             \legend{Trained on CC6 and Con4, Random Init}
-        }
         \end{axis}
         \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
             at (current bounding box.north)
@@ -503,7 +489,6 @@ Here are the results from the mulit-game experiments.
             legend cell align=left,
             yticklabel={\pgfmathparse{\tick*100}\pgfmathprintnumber{\pgfmathresult}\%}
         ]
-        \iftoggle{render_graphs}{
             \errorband[green, opacity=0.5,forget plot]{data/cc6_trained_on_bt+con4_(100trials).csv}{0}{1}{2}
             \addplot
                 +[thick,mark=diamond*, mark options={fill=green}, mark repeat=20, mark size=3, green!50!black] 
@@ -517,7 +502,6 @@ Here are the results from the mulit-game experiments.
                 {data/chinese_checkers_6_interval_data.csv};
             
             \legend{Trained on BT and Con4, Random Init}
-        }
         \end{axis}
         \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
             at (current bounding box.north)
@@ -536,8 +520,6 @@ Here are the results from the mulit-game experiments.
             legend cell align=left,
             yticklabel={\pgfmathparse{\tick*100}\pgfmathprintnumber{\pgfmathresult}\%}
         ]
-        
-        \iftoggle{render_graphs}{
             \errorband[green, opacity=0.5,forget plot]{data/con4_trained_on_cc6+bt_(240trials).csv}{0}{1}{2}
             \addplot
                 +[thick,mark=diamond*, mark options={fill=green}, mark repeat=20, mark size=3, green!50!black] 
@@ -551,7 +533,7 @@ Here are the results from the mulit-game experiments.
                 {data/connect4_interval_data.csv};
             
             \legend{Trained on BT and CC6, Random Init}
-        }
+        
         \end{axis}
         \node[align=center,font=\bfseries, xshift=2em, yshift=1em] (title) 
             at (current bounding box.north)
@@ -593,7 +575,7 @@ Here are the results from the mulit-game experiments.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\bibliographystyle{unsrt}
+\bibliographystyle{IEEEtran}
 \bibliography{refs.bib}
 
 \newpage
